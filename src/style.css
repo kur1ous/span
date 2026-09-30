@@ -200,6 +200,52 @@ body::before {
   fill: var(--ink);
 }
 
+/* grab rings on the vector tips */
+.handle {
+  cursor: grab;
+  outline: none;
+}
+
+.handle.is-dragging {
+  cursor: grabbing;
+}
+
+.handle .hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.handle .ring {
+  fill: var(--paper);
+  fill-opacity: 0;
+  stroke-width: 1.5px;
+  transition:
+    fill-opacity var(--dur-fast) var(--ease),
+    r var(--dur-fast) var(--ease);
+}
+
+.handle-i .ring { stroke: var(--i-hat); }
+.handle-j .ring { stroke: var(--j-hat); }
+
+.handle:hover .ring,
+.handle.is-dragging .ring {
+  fill-opacity: 0.3;
+  r: 13px;
+}
+
+.handle .focus-ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: var(--w-hair);
+  stroke-dasharray: 3 3;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.handle:focus-visible .focus-ring {
+  opacity: 1;
+}
+
 /* title block: cells divided by hairlines, labels in condensed caps */
 .titleblock {
   display: flex;
@@ -245,12 +291,70 @@ body::before {
   color: var(--ink-soft);
 }
 
+.cell-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.btn {
+  padding: 2px var(--s-3);
+  border: var(--w-hair) solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font: 500 var(--t-label) / 1.6 var(--font-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 .readout {
-  font-family: var(--font-mono);
-  font-size: var(--t-num);
-  font-variant-numeric: tabular-nums;
   min-height: 3.5rem;
 }
+
+.readout .katex-display {
+  margin: 0;
+  text-align: left;
+}
+
+.readout .katex-display > .katex {
+  text-align: left;
+}
+
+.tex-matrix .katex {
+  font-size: 1.7em;
+}
+
+.tex-columns {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: var(--w-hair) dashed var(--rule-strong);
+  font-size: 0.95rem;
+}
+
+/* numbers in the tabular mono face, everything structural stays in KaTeX's own */
+.katex .num,
+.katex .num * {
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.katex .col-i { color: var(--i-hat); }
+.katex .col-j { color: var(--j-hat); }
 
 .meta {
   display: flex;

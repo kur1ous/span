@@ -9,6 +9,7 @@
 */
 
 import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
+import type { Which } from './edit';
 import { gridStops, sourceExtent } from './grid';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
@@ -29,14 +30,30 @@ function el<K extends keyof SVGElementTagNameMap>(
 
 const f = (n: number) => n.toFixed(1);
 
+function handleLabel(which: Which, v: Vec2): string {
+  const name = which === 'i' ? 'i-hat' : 'j-hat';
+  return `Image of ${name}, at ${v[0].toFixed(2)}, ${v[1].toFixed(2)}. Arrow keys move it, shift for larger steps.`;
+}
+
 function segments(list: readonly (readonly [Vec2, Vec2])[]): string {
   return list.map(([p, q]) => `M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}`).join('');
 }
 
 export interface Plane {
   readonly svg: SVGSVGElement;
+  /** focusable grab rings sitting on the tip of each image vector */
+  readonly handles: Readonly<Record<Which, SVGGElement>>;
   view(): View;
   render(m: Mat2): void;
+}
+
+function makeHandle(which: Which, parent: Element): SVGGElement {
+  const g = el('g', `handle handle-${which}`, parent, { tabindex: '0', role: 'application' });
+  // the hit disc is invisible but wide, so fingers and shaky mice can still grab
+  el('circle', 'hit', g, { r: '24' });
+  el('circle', 'ring', g, { r: '11' });
+  el('circle', 'focus-ring', g, { r: '18' });
+  return g;
 }
 
 export function createPlane(host: HTMLElement): Plane {
@@ -59,6 +76,8 @@ export function createPlane(host: HTMLElement): Plane {
   labelI.textContent = 'î';
   labelJ.textContent = 'ĵ';
   const origin = el('circle', 'origin', vecs, { r: '3.5' });
+
+  const handles = { i: makeHandle('i', svg), j: makeHandle('j', svg) };
 
   let view = makeView(host.clientWidth || 1, host.clientHeight || 1);
   let current: Mat2 = { a: 1, b: 0, c: 0, d: 1 };
@@ -161,8 +180,14 @@ export function createPlane(host: HTMLElement): Plane {
     origin.setAttribute('cy', f(o[1]));
 
     const [ci, cj] = columns(m);
-    drawArrow(shaftI, headI, labelI, toScreen(view, ci));
-    drawArrow(shaftJ, headJ, labelJ, toScreen(view, cj));
+    const ti = toScreen(view, ci);
+    const tj = toScreen(view, cj);
+    drawArrow(shaftI, headI, labelI, ti);
+    drawArrow(shaftJ, headJ, labelJ, tj);
+    handles.i.setAttribute('transform', `translate(${f(ti[0])} ${f(ti[1])})`);
+    handles.j.setAttribute('transform', `translate(${f(tj[0])} ${f(tj[1])})`);
+    handles.i.setAttribute('aria-label', handleLabel('i', ci));
+    handles.j.setAttribute('aria-label', handleLabel('j', cj));
   }
 
   function resize() {
@@ -180,6 +205,7 @@ export function createPlane(host: HTMLElement): Plane {
 
   return {
     svg,
+    handles,
     view: () => view,
     render(m) {
       current = m;
