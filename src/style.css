@@ -119,12 +119,85 @@ body::before {
   position: relative;
   min-height: 0;
   border: var(--w-rule) solid var(--ink);
-  background:
-    linear-gradient(var(--rule) var(--w-hair), transparent var(--w-hair)) 0 0 / 48px 48px,
-    linear-gradient(90deg, var(--rule) var(--w-hair), transparent var(--w-hair)) 0 0 / 48px 48px,
-    linear-gradient(var(--rule-fine) var(--w-hair), transparent var(--w-hair)) 0 0 / 12px 12px,
-    linear-gradient(90deg, var(--rule-fine) var(--w-hair), transparent var(--w-hair)) 0 0 / 12px 12px;
   overflow: hidden;
+}
+
+/* plane layers, back to front */
+.plane {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+
+.plane path,
+.plane line {
+  fill: none;
+}
+
+.paper-fine {
+  stroke: var(--rule-fine);
+  stroke-width: var(--w-hair);
+}
+
+.paper-unit {
+  stroke: var(--rule);
+  stroke-width: var(--w-hair);
+}
+
+.paper-axes {
+  stroke: var(--rule-strong);
+  stroke-width: var(--w-rule);
+}
+
+.tick {
+  fill: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.warp {
+  stroke: var(--grid-image);
+  stroke-width: var(--w-hair);
+  stroke-opacity: 0.85;
+}
+
+.warp-axes {
+  stroke: var(--ink);
+  stroke-width: var(--w-rule);
+  stroke-opacity: 0.8;
+}
+
+.shaft {
+  stroke-width: var(--w-vector);
+  stroke-linecap: butt;
+}
+
+.shaft-i { stroke: var(--i-hat); }
+.shaft-j { stroke: var(--j-hat); }
+.head-i { fill: var(--i-hat); }
+.head-j { fill: var(--j-hat); }
+
+.vec-label {
+  font-family: var(--font-label);
+  font-weight: 600;
+  font-size: 20px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.vec-label-i { fill: var(--i-hat); }
+.vec-label-j { fill: var(--j-hat); }
+
+.origin {
+  fill: var(--ink);
 }
 
 /* title block: cells divided by hairlines, labels in condensed caps */
