@@ -1,0 +1,23 @@
+{
+  "name": "span",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Drag the columns of a 2x2 matrix and watch the plane follow.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "katex": "^0.18.9"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.8",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.3"
+  }
+}

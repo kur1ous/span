@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Drag the columns of a 2x2 matrix and watch the plane follow." />
+    <title>span</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="sheet">
+      <main class="plane-frame" id="plane-frame" aria-label="The plane">
+        <!-- the plane svg is mounted here -->
+      </main>
+
+      <aside class="titleblock">
+        <header class="cell brand">
+          <h1>span</h1>
+          <p>Drag the columns. Watch the plane follow.</p>
+        </header>
+
+        <section class="cell" id="matrix-cell" aria-labelledby="matrix-label">
+          <h2 class="label" id="matrix-label">Transform</h2>
+          <div class="readout" id="matrix-readout"></div>
+        </section>
+
+        <section class="cell" id="det-cell" aria-labelledby="det-label">
+          <h2 class="label" id="det-label">Determinant</h2>
+          <div class="readout" id="det-readout"></div>
+        </section>
+
+        <footer class="cell meta">
+          <span>dwg. span</span>
+          <span>rev. 0.1</span>
+          <span>scale 1 : 1</span>
+        </footer>
+      </aside>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
