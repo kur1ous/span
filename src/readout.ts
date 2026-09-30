@@ -1,11 +1,6 @@
 import katex from 'katex';
-import type { Mat2 } from './math/mat2';
-
-/** Fixed two decimals, and never "-0.00". */
-export function fmt(n: number): string {
-  const s = n.toFixed(2);
-  return s === '-0.00' ? '0.00' : s;
-}
+import { fmt } from './format';
+import { det, type Mat2 } from './math/mat2';
 
 // \htmlClass is the only extension we allow, so colours and the mono override
 // come from style.css instead of being baked into the TeX
@@ -28,27 +23,60 @@ function matrixTex(m: Mat2): string {
 
 function columnsTex(m: Mat2): string {
   return (
+    '\\begin{array}{l}' +
     `\\htmlClass{col-i}{A\\hat{\\imath}=(${cell('col-i', m.a)},\\,${cell('col-i', m.c)})}` +
     '\\\\[2pt]' +
-    `\\htmlClass{col-j}{A\\hat{\\jmath}=(${cell('col-j', m.b)},\\,${cell('col-j', m.d)})}`
+    `\\htmlClass{col-j}{A\\hat{\\jmath}=(${cell('col-j', m.b)},\\,${cell('col-j', m.d)})}` +
+    '\\end{array}'
   );
+}
+
+function detTex(m: Mat2): string {
+  return (
+    '\\begin{array}{l}' +
+    `\\det A=\\htmlClass{num det-value}{${fmt(det(m))}}\\\\[4pt]` +
+    `=ad-bc=(${fmt(m.a)})(${fmt(m.d)})-(${fmt(m.b)})(${fmt(m.c)})` +
+    '\\end{array}'
+  );
+}
+
+/** Below this the plane is visually flat, whatever the sign says. */
+const FLAT = 0.005;
+
+function detNote(d: number): string {
+  if (Math.abs(d) < FLAT) return 'Flattened: the plane collapses onto a line and area goes to zero.';
+  const scale = `Areas scale by ${fmt(Math.abs(d))}.`;
+  return d > 0
+    ? `${scale} Orientation is kept.`
+    : `${scale} Orientation is flipped: the plane is mirrored.`;
 }
 
 export interface Readout {
   update(m: Mat2): void;
 }
 
-export function createReadout(root: HTMLElement): Readout {
-  const matrix = document.createElement('div');
-  matrix.className = 'tex tex-matrix';
-  const cols = document.createElement('div');
-  cols.className = 'tex tex-columns';
-  root.replaceChildren(matrix, cols);
+function div(cls: string): HTMLDivElement {
+  const n = document.createElement('div');
+  n.className = cls;
+  return n;
+}
+
+export function createReadout(matrixRoot: HTMLElement, detRoot: HTMLElement): Readout {
+  const matrix = div('tex tex-matrix');
+  const cols = div('tex tex-columns');
+  matrixRoot.replaceChildren(matrix, cols);
+
+  const detBox = div('tex tex-det');
+  const note = document.createElement('p');
+  note.className = 'det-note';
+  detRoot.replaceChildren(detBox, note);
 
   return {
     update(m) {
       katex.render(matrixTex(m), matrix, OPTIONS);
-      katex.render(`\\begin{array}{l}${columnsTex(m)}\\end{array}`, cols, OPTIONS);
+      katex.render(columnsTex(m), cols, OPTIONS);
+      katex.render(detTex(m), detBox, OPTIONS);
+      note.textContent = detNote(det(m));
     },
   };
 }

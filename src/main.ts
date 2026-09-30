@@ -9,7 +9,10 @@ import { createReadout } from './readout';
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
 const plane = createPlane(document.getElementById('plane-frame')!);
-const readout = createReadout(document.getElementById('matrix-readout')!);
+const readout = createReadout(
+  document.getElementById('matrix-readout')!,
+  document.getElementById('det-readout')!,
+);
 
 let matrix: Mat2 = IDENTITY;
 let stop = () => {};

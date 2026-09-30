@@ -200,6 +200,58 @@ body::before {
   fill: var(--ink);
 }
 
+/* determinant region: wash when orientation is kept, section hatching when flipped */
+.unit-square {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: var(--w-hair);
+  stroke-dasharray: 4 4;
+}
+
+.det-region {
+  fill: var(--det-wash);
+  stroke: var(--ink);
+  stroke-width: var(--w-hair);
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.det-region.is-negative {
+  fill: url(#det-hatch);
+}
+
+.hatch-ground {
+  fill: var(--det-wash);
+}
+
+.hatch-line {
+  stroke: var(--det-hatch);
+  stroke-width: var(--w-hair);
+}
+
+.orient-arc {
+  stroke: var(--ink);
+  stroke-width: var(--w-rule);
+  stroke-linecap: round;
+}
+
+.orient-head {
+  fill: var(--ink);
+}
+
+.det-label {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
 /* grab rings on the vector tips */
 .handle {
   cursor: grab;
@@ -343,6 +395,23 @@ body::before {
   padding-top: var(--s-3);
   border-top: var(--w-hair) dashed var(--rule-strong);
   font-size: 0.95rem;
+}
+
+.tex-det .katex {
+  font-size: 1.15em;
+}
+
+.tex-det .det-value {
+  font-size: 1.5em;
+}
+
+.det-note {
+  margin: var(--s-3) 0 0;
+  padding-top: var(--s-3);
+  border-top: var(--w-hair) dashed var(--rule-strong);
+  font-size: var(--t-body);
+  line-height: 1.35;
+  color: var(--ink-soft);
 }
 
 /* numbers in the tabular mono face, everything structural stays in KaTeX's own */

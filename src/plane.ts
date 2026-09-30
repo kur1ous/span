@@ -10,7 +10,9 @@
 
 import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
 import type { Which } from './edit';
+import { fmt } from './format';
 import { gridStops, sourceExtent } from './grid';
+import { centroid, polygonArea, unitSquareImage } from './region';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -27,6 +29,8 @@ function el<K extends keyof SVGElementTagNameMap>(
   parent?.appendChild(node);
   return node;
 }
+
+const SQUARE: readonly Vec2[] = [[0, 0], [1, 0], [1, 1], [0, 1]];
 
 const f = (n: number) => n.toFixed(1);
 
@@ -63,8 +67,26 @@ export function createPlane(host: HTMLElement): Plane {
   const paperUnit = el('path', 'paper-unit', svg);
   const paperAxes = el('path', 'paper-axes', svg);
   const ticks = el('g', 'ticks', svg);
+
+  // section hatching for the flipped (negative) region
+  const defs = el('defs', undefined, svg);
+  const hatch = el('pattern', undefined, defs, {
+    id: 'det-hatch',
+    width: '7',
+    height: '7',
+    patternUnits: 'userSpaceOnUse',
+    patternTransform: 'rotate(45)',
+  });
+  el('rect', 'hatch-ground', hatch, { width: '7', height: '7' });
+  el('line', 'hatch-line', hatch, { x1: '0', y1: '0', x2: '0', y2: '7' });
+
+  const unitSquare = el('polygon', 'unit-square', svg);
+  const detRegion = el('polygon', 'det-region', svg);
   const warp = el('path', 'warp', svg);
   const warpAxes = el('path', 'warp-axes', svg);
+  const arc = el('path', 'orient-arc', svg);
+  const arcHead = el('polygon', 'orient-head', svg);
+  const detLabel = el('text', 'det-label', svg);
 
   const vecs = el('g', 'vectors', svg);
   const shaftI = el('line', 'shaft shaft-i', vecs);
@@ -188,6 +210,56 @@ export function createPlane(host: HTMLElement): Plane {
     handles.j.setAttribute('transform', `translate(${f(tj[0])} ${f(tj[1])})`);
     handles.i.setAttribute('aria-label', handleLabel('i', ci));
     handles.j.setAttribute('aria-label', handleLabel('j', cj));
+
+    drawDeterminant(m, ti, tj);
+  }
+
+  const pts = (list: readonly Vec2[]) => list.map((p) => `${f(p[0])},${f(p[1])}`).join(' ');
+
+  function drawDeterminant(m: Mat2, ti: Vec2, tj: Vec2) {
+    const corners = unitSquareImage(m);
+    const area = polygonArea(corners);
+    const screen = corners.map((p) => toScreen(view, p));
+
+    // the plain unit square stays behind as the thing being compared against
+    unitSquare.setAttribute('points', pts(SQUARE.map((p) => toScreen(view, p))));
+    detRegion.setAttribute('points', pts(screen));
+    detRegion.classList.toggle('is-negative', area < 0);
+
+    // orientation arc: from the i vector round to the j vector, the short way.
+    // Counter-clockwise on screen when det > 0, clockwise when it flips.
+    const o = toScreen(view, [0, 0]);
+    const li = Math.hypot(ti[0] - o[0], ti[1] - o[1]);
+    const lj = Math.hypot(tj[0] - o[0], tj[1] - o[1]);
+    const r = Math.min(30, li * 0.5, lj * 0.5);
+    const showArc = r > 9 && Math.abs(area) * view.scale * view.scale > 400;
+    arc.style.display = arcHead.style.display = showArc ? '' : 'none';
+    if (showArc) {
+      const a1 = Math.atan2(ti[1] - o[1], ti[0] - o[0]);
+      const a2 = Math.atan2(tj[1] - o[1], tj[0] - o[0]);
+      const sweep = area < 0 ? 1 : 0;
+      const at = (a: number): Vec2 => [o[0] + r * Math.cos(a), o[1] + r * Math.sin(a)];
+      const p1 = at(a1);
+      const p2 = at(a2);
+      arc.setAttribute('d', `M${f(p1[0])} ${f(p1[1])}A${f(r)} ${f(r)} 0 0 ${sweep} ${f(p2[0])} ${f(p2[1])}`);
+      // tangent at the end of the arc, in the direction of travel
+      const t: Vec2 = sweep ? [-Math.sin(a2), Math.cos(a2)] : [Math.sin(a2), -Math.cos(a2)];
+      const n: Vec2 = [-t[1], t[0]];
+      const tip: Vec2 = [p2[0] + t[0] * 6, p2[1] + t[1] * 6];
+      const l: Vec2 = [p2[0] - t[0] * 2 + n[0] * 4, p2[1] - t[1] * 2 + n[1] * 4];
+      const rr: Vec2 = [p2[0] - t[0] * 2 - n[0] * 4, p2[1] - t[1] * 2 - n[1] * 4];
+      arcHead.setAttribute('points', pts([tip, l, rr]));
+    }
+
+    // the label only appears when the region is big enough to hold it
+    const c = toScreen(view, centroid(corners));
+    const roomy = Math.abs(area) * view.scale * view.scale > 1600;
+    detLabel.style.display = roomy ? '' : 'none';
+    if (roomy) {
+      detLabel.textContent = fmt(area);
+      detLabel.setAttribute('x', f(c[0]));
+      detLabel.setAttribute('y', f(c[1] + 4.5));
+    }
   }
 
   function resize() {
