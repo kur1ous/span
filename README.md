@@ -14,11 +14,11 @@ once you can push on it and see where everything goes.
 ## Run it
 
 ```
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-`npm test` runs the math tests, `npm run build` type-checks and bundles to
+`pnpm test` runs the math tests, `pnpm build` type-checks and bundles to
 `dist/`.
 
 ## Using it
