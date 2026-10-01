@@ -3,7 +3,7 @@ import './style.css';
 import { IDENTITY, fromColumns, type Mat2 } from './math/mat2';
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
-import { createPlane } from './plane';
+import { createPlane, type OverlayState } from './plane';
 import { createReadout } from './readout';
 
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
@@ -13,6 +13,17 @@ const readout = createReadout(
   document.getElementById('matrix-readout')!,
   document.getElementById('det-readout')!,
 );
+
+const overlays: OverlayState = { unitSquare: true, quarterRules: true, tickLabels: true };
+for (const key of Object.keys(overlays) as (keyof OverlayState)[]) {
+  const checkbox = document.getElementById(`overlay-${key}`) as HTMLInputElement;
+  checkbox.checked = overlays[key];
+  checkbox.addEventListener('change', () => {
+    overlays[key] = checkbox.checked;
+    plane.setOverlays(overlays);
+  });
+}
+plane.setOverlays(overlays);
 
 let matrix: Mat2 = IDENTITY;
 let stop = () => {};

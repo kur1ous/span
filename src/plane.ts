@@ -43,12 +43,19 @@ function segments(list: readonly (readonly [Vec2, Vec2])[]): string {
   return list.map(([p, q]) => `M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}`).join('');
 }
 
+export interface OverlayState {
+  unitSquare: boolean;
+  quarterRules: boolean;
+  tickLabels: boolean;
+}
+
 export interface Plane {
   readonly svg: SVGSVGElement;
   /** focusable grab rings sitting on the tip of each image vector */
   readonly handles: Readonly<Record<Which, SVGGElement>>;
   view(): View;
   render(m: Mat2): void;
+  setOverlays(state: Readonly<OverlayState>): void;
 }
 
 function makeHandle(which: Which, parent: Element): SVGGElement {
@@ -219,6 +226,14 @@ export function createPlane(host: HTMLElement): Plane {
     render(m) {
       current = m;
       draw();
+    },
+    setOverlays(state) {
+      // Visibility survives redraws that independently hide small area labels and arcs.
+      for (const node of [unitSquare, detRegion, arc, arcHead, detLabel]) {
+        node.style.visibility = state.unitSquare ? '' : 'hidden';
+      }
+      paperFine.style.visibility = state.quarterRules ? '' : 'hidden';
+      ticks.style.visibility = state.tickLabels ? '' : 'hidden';
     },
   };
 }

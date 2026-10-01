@@ -303,6 +303,7 @@ body::before {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
   border: var(--w-rule) solid var(--ink);
   background: var(--paper);
 }
@@ -341,6 +342,37 @@ body::before {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+.overlays {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.overlay-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-3);
+}
+
+.overlay-strip label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding-block: var(--s-1);
+  cursor: pointer;
+}
+
+.overlay-strip input {
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.overlay-strip input:focus-visible {
+  outline: var(--w-rule) solid var(--ink);
+  outline-offset: var(--s-1);
 }
 
 .cell-head {
