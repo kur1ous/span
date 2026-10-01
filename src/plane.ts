@@ -8,10 +8,10 @@
   gives focus, arrow-key handling and screen-reader labels for free.
 */
 
-import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
+import { columns, type Mat2, type Vec2 } from './math/mat2';
 import type { Which } from './edit';
 import { fmt } from './format';
-import { gridStops, sourceExtent } from './grid';
+import { arrowGeometry, orientationArc, paperGrid, transformedGrid } from './geometry';
 import { centroid, polygonArea, unitSquareImage } from './region';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
@@ -107,30 +107,9 @@ export function createPlane(host: HTMLElement): Plane {
   /** Everything that depends only on the frame size: the static paper. */
   function drawPaper() {
     const b = worldBounds(view);
-    const x0 = Math.ceil(b.min[0] * 4) / 4;
-    const y0 = Math.ceil(b.min[1] * 4) / 4;
-
-    const fine: [Vec2, Vec2][] = [];
-    const unit: [Vec2, Vec2][] = [];
-    const vertical = (x: number, into: [Vec2, Vec2][]) =>
-      into.push([toScreen(view, [x, b.min[1]]), toScreen(view, [x, b.max[1]])]);
-    const horizontal = (y: number, into: [Vec2, Vec2][]) =>
-      into.push([toScreen(view, [b.min[0], y]), toScreen(view, [b.max[0], y])]);
-
-    // quarter-unit rules are only useful once a unit is wide enough to subdivide
-    if (view.scale >= 36) {
-      for (let x = x0; x <= b.max[0]; x += 0.25) if (!Number.isInteger(x)) vertical(x, fine);
-      for (let y = y0; y <= b.max[1]; y += 0.25) if (!Number.isInteger(y)) horizontal(y, fine);
-    }
-    for (let x = Math.ceil(b.min[0]); x <= b.max[0]; x++) if (x !== 0) vertical(x, unit);
-    for (let y = Math.ceil(b.min[1]); y <= b.max[1]; y++) if (y !== 0) horizontal(y, unit);
-
+    const { fine, unit, axes } = paperGrid(view);
     paperFine.setAttribute('d', segments(fine));
     paperUnit.setAttribute('d', segments(unit));
-
-    const axes: [Vec2, Vec2][] = [];
-    vertical(0, axes);
-    horizontal(0, axes);
     paperAxes.setAttribute('d', segments(axes));
 
     ticks.replaceChildren();
@@ -154,46 +133,21 @@ export function createPlane(host: HTMLElement): Plane {
 
   function drawArrow(shaft: SVGLineElement, head: SVGPolygonElement, label: SVGTextElement, tip: Vec2) {
     const o = toScreen(view, [0, 0]);
-    const dx = tip[0] - o[0];
-    const dy = tip[1] - o[1];
-    const len = Math.hypot(dx, dy);
-    const hidden = len < 2;
-    shaft.style.display = head.style.display = label.style.display = hidden ? 'none' : '';
-    if (hidden) return;
-    const ux = dx / len;
-    const uy = dy / len;
-    const hl = Math.min(15, len * 0.55);
-    const hw = hl * 0.42;
-    const bx = tip[0] - ux * hl;
-    const by = tip[1] - uy * hl;
+    const arrow = arrowGeometry(o, tip);
+    shaft.style.display = head.style.display = label.style.display = arrow ? '' : 'none';
+    if (!arrow) return;
     shaft.setAttribute('x1', f(o[0]));
     shaft.setAttribute('y1', f(o[1]));
-    shaft.setAttribute('x2', f(bx + ux));
-    shaft.setAttribute('y2', f(by + uy));
-    head.setAttribute(
-      'points',
-      `${f(tip[0])},${f(tip[1])} ${f(bx - uy * hw)},${f(by + ux * hw)} ${f(bx + uy * hw)},${f(by - ux * hw)}`,
-    );
-    label.setAttribute('x', f(tip[0] + ux * 16 - uy * 10));
-    label.setAttribute('y', f(tip[1] + uy * 16 + ux * 10 + 5));
+    shaft.setAttribute('x2', f(arrow.shaftEnd[0]));
+    shaft.setAttribute('y2', f(arrow.shaftEnd[1]));
+    head.setAttribute('points', pts(arrow.head));
+    label.setAttribute('x', f(arrow.label[0]));
+    label.setAttribute('y', f(arrow.label[1]));
   }
 
   function draw() {
     const m = current;
-    const b = worldBounds(view);
-    const ext = sourceExtent(m, b);
-    const image = (p: Vec2) => toScreen(view, apply(m, p));
-
-    const lines: [Vec2, Vec2][] = [];
-    const axes: [Vec2, Vec2][] = [];
-    for (const x of gridStops(ext.min[0], ext.max[0])) {
-      const seg: [Vec2, Vec2] = [image([x, ext.min[1] - 1]), image([x, ext.max[1] + 1])];
-      (x === 0 ? axes : lines).push(seg);
-    }
-    for (const y of gridStops(ext.min[1], ext.max[1])) {
-      const seg: [Vec2, Vec2] = [image([ext.min[0] - 1, y]), image([ext.max[0] + 1, y])];
-      (y === 0 ? axes : lines).push(seg);
-    }
+    const { lines, axes } = transformedGrid(m, view);
     warp.setAttribute('d', segments(lines));
     warpAxes.setAttribute('d', segments(axes));
 
@@ -226,29 +180,12 @@ export function createPlane(host: HTMLElement): Plane {
     detRegion.setAttribute('points', pts(screen));
     detRegion.classList.toggle('is-negative', area < 0);
 
-    // orientation arc: from the i vector round to the j vector, the short way.
-    // Counter-clockwise on screen when det > 0, clockwise when it flips.
-    const o = toScreen(view, [0, 0]);
-    const li = Math.hypot(ti[0] - o[0], ti[1] - o[1]);
-    const lj = Math.hypot(tj[0] - o[0], tj[1] - o[1]);
-    const r = Math.min(30, li * 0.5, lj * 0.5);
-    const showArc = r > 9 && Math.abs(area) * view.scale * view.scale > 400;
-    arc.style.display = arcHead.style.display = showArc ? '' : 'none';
-    if (showArc) {
-      const a1 = Math.atan2(ti[1] - o[1], ti[0] - o[0]);
-      const a2 = Math.atan2(tj[1] - o[1], tj[0] - o[0]);
-      const sweep = area < 0 ? 1 : 0;
-      const at = (a: number): Vec2 => [o[0] + r * Math.cos(a), o[1] + r * Math.sin(a)];
-      const p1 = at(a1);
-      const p2 = at(a2);
+    const orientation = orientationArc(view, ti, tj, area);
+    arc.style.display = arcHead.style.display = orientation ? '' : 'none';
+    if (orientation) {
+      const { start: p1, end: p2, radius: r, sweep } = orientation;
       arc.setAttribute('d', `M${f(p1[0])} ${f(p1[1])}A${f(r)} ${f(r)} 0 0 ${sweep} ${f(p2[0])} ${f(p2[1])}`);
-      // tangent at the end of the arc, in the direction of travel
-      const t: Vec2 = sweep ? [-Math.sin(a2), Math.cos(a2)] : [Math.sin(a2), -Math.cos(a2)];
-      const n: Vec2 = [-t[1], t[0]];
-      const tip: Vec2 = [p2[0] + t[0] * 6, p2[1] + t[1] * 6];
-      const l: Vec2 = [p2[0] - t[0] * 2 + n[0] * 4, p2[1] - t[1] * 2 + n[1] * 4];
-      const rr: Vec2 = [p2[0] - t[0] * 2 - n[0] * 4, p2[1] - t[1] * 2 - n[1] * 4];
-      arcHead.setAttribute('points', pts([tip, l, rr]));
+      arcHead.setAttribute('points', pts(orientation.head));
     }
 
     // the label only appears when the region is big enough to hold it
