@@ -33,6 +33,7 @@ export function bindHandles(
   for (const which of ['i', 'j'] as Which[]) {
     const handle = plane.handles[which];
     let offset: Vec2 | null = null;
+    let pointerId: number | null = null;
 
     const pointerWorld = (e: PointerEvent): Vec2 => {
       const r = plane.svg.getBoundingClientRect();
@@ -40,8 +41,10 @@ export function bindHandles(
     };
 
     handle.addEventListener('pointerdown', (e) => {
+      if (pointerId !== null) return;
       onGrab();
       handle.setPointerCapture(e.pointerId);
+      pointerId = e.pointerId;
       handle.focus();
       handle.classList.add('is-dragging');
       // remember where inside the ring it was grabbed so the tip does not jump
@@ -52,7 +55,7 @@ export function bindHandles(
     });
 
     handle.addEventListener('pointermove', (e) => {
-      if (!offset) return;
+      if (!offset || e.pointerId !== pointerId) return;
       const p = pointerWorld(e);
       let v: Vec2 = [p[0] + offset[0], p[1] + offset[1]];
       if (!e.altKey) v = snap(v);
@@ -60,13 +63,15 @@ export function bindHandles(
     });
 
     const release = (e: PointerEvent) => {
-      if (!offset) return;
+      if (e.pointerId !== pointerId) return;
+      pointerId = null;
       offset = null;
       handle.classList.remove('is-dragging');
       if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
     };
     handle.addEventListener('pointerup', release);
     handle.addEventListener('pointercancel', release);
+    handle.addEventListener('lostpointercapture', release);
 
     handle.addEventListener('keydown', (e) => {
       const dir = ARROWS[e.key];
