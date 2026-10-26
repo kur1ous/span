@@ -12,6 +12,7 @@ const plane = createPlane(document.getElementById('plane-frame')!);
 const readout = createReadout(
   document.getElementById('matrix-readout')!,
   document.getElementById('det-readout')!,
+  document.getElementById('eigen-readout')!,
 );
 
 const overlays: OverlayState = { unitSquare: true, quarterRules: true, tickLabels: true };

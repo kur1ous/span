@@ -460,7 +460,21 @@ body::before {
   font-size: 1.5em;
 }
 
-.det-note {
+.eigen-kind {
+  margin: 0 0 var(--s-2);
+  color: var(--eigen);
+}
+
+.tex-eigen {
+  overflow-x: auto;
+}
+
+.tex-eigen .katex {
+  font-size: var(--t-body);
+}
+
+.det-note,
+.eigen-note {
   margin: var(--s-3) 0 0;
   padding-top: var(--s-3);
   border-top: var(--w-hair) dashed var(--rule-strong);
