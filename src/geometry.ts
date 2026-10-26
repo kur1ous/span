@@ -1,8 +1,25 @@
-import { apply, type Mat2, type Vec2 } from './math/mat2';
+import { apply, eigen, type Mat2, type Vec2 } from './math/mat2';
 import { gridStops, sourceExtent } from './grid';
 import { toScreen, worldBounds, type View } from './view';
 
 type Segment = readonly [Vec2, Vec2];
+
+export function eigenLines(m: Mat2, view: View) {
+  const e = eigen(m);
+  if (e.kind !== 'real') return [];
+  const o = toScreen(view, [0, 0]);
+  return e.vectors.map(([x, y], i) => {
+    // Each line reaches whichever edge it meets first, including axis directions.
+    const reach = Math.min(view.width / (2 * Math.abs(x)), view.height / (2 * Math.abs(y)));
+    const dx = x * reach, dy = -y * reach;
+    const segment: Segment = [[o[0] - dx, o[1] - dy], [o[0] + dx, o[1] + dy]];
+    // Opposite ends keep the two tags apart even when the eigenlines nearly coincide.
+    const side = i === 0 ? 1 : -1;
+    const label: Vec2 = [o[0] + side * dx * 0.85, o[1] + side * dy * 0.85];
+    const anchor = Math.abs(x) < 1e-12 ? 'middle' : side * x > 0 ? 'end' : 'start';
+    return { segment, label, anchor, value: e.values[i]! };
+  });
+}
 
 export function paperGrid(view: View) {
   const b = worldBounds(view);

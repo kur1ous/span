@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrowGeometry, orientationArc, paperGrid, transformedGrid } from './geometry';
+import { arrowGeometry, eigenLines, orientationArc, paperGrid, transformedGrid } from './geometry';
 import type { Vec2 } from './math/mat2';
 
 const view = { width: 200, height: 200, scale: 50 };
@@ -10,6 +10,39 @@ const close = (actual: readonly Vec2[], expected: readonly Vec2[]) => {
     expect(actual[i]![1]).toBeCloseTo(p[1], 12);
   });
 };
+
+describe('eigenlines', () => {
+  it('clips horizontal and vertical eigenlines and keeps their eigenvalues', () => {
+    const lines = eigenLines({ a: 3, b: 0, c: 0, d: -2 }, view);
+    expect(lines.map((line) => line.value)).toEqual([3, -2]);
+    close(lines[0]!.segment, [[0, 100], [200, 100]]);
+    close(lines[1]!.segment, [[100, 200], [100, 0]]);
+    close(lines.map((line) => line.label), [[185, 100], [100, 185]]);
+    expect(lines.map((line) => line.anchor)).toEqual(['end', 'middle']);
+  });
+
+  it.each([
+    { width: 400, height: 200, ends: [[100, 200], [300, 0]] as Vec2[] },
+    { width: 200, height: 400, ends: [[0, 300], [200, 100]] as Vec2[] },
+  ])('clips diagonal lines in a $width by $height frame', ({ width, height, ends }) => {
+    const lines = eigenLines({ a: 2, b: 1, c: 1, d: 2 }, { width, height, scale: 50 });
+    close(lines[0]!.segment, ends);
+    close(lines[1]!.segment, ends.map(([x, y]) => [x, height - y]));
+    expect(lines.map((line) => line.value)).toEqual([3, 1]);
+  });
+
+  it('preserves nonorthogonal eigendirections and a zero eigenvalue', () => {
+    const lines = eigenLines({ a: 2, b: 6, c: 0, d: 0 }, view);
+    expect(lines.map((line) => line.value)).toEqual([2, 0]);
+    close(lines[1]!.segment, [[0, 100 - 100 / 3], [200, 100 + 100 / 3]]);
+  });
+
+  it('draws no lines for a complex pair or the separate repeated-root case', () => {
+    expect(eigenLines({ a: 0, b: -1, c: 1, d: 0 }, view)).toEqual([]);
+    expect(eigenLines({ a: 1, b: 0, c: 0, d: 1 }, view)).toEqual([]);
+    expect(eigenLines({ a: 1, b: 1, c: 0, d: 1 }, view)).toEqual([]);
+  });
+});
 
 describe('orientation arc', () => {
   it.each([

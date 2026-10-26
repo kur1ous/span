@@ -11,7 +11,7 @@
 import { columns, type Mat2, type Vec2 } from './math/mat2';
 import type { Which } from './edit';
 import { fmt } from './format';
-import { arrowGeometry, orientationArc, paperGrid, transformedGrid } from './geometry';
+import { arrowGeometry, eigenLines, orientationArc, paperGrid, transformedGrid } from './geometry';
 import { centroid, polygonArea, unitSquareImage } from './region';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
@@ -94,6 +94,7 @@ export function createPlane(host: HTMLElement): Plane {
   const arc = el('path', 'orient-arc', svg);
   const arcHead = el('polygon', 'orient-head', svg);
   const detLabel = el('text', 'det-label', svg);
+  const eigenOverlay = el('g', 'eigen-overlay', svg, { 'aria-label': 'Eigenlines' });
 
   const vecs = el('g', 'vectors', svg);
   const shaftI = el('line', 'shaft shaft-i', vecs);
@@ -173,6 +174,18 @@ export function createPlane(host: HTMLElement): Plane {
     handles.j.setAttribute('aria-label', handleLabel('j', cj));
 
     drawDeterminant(m, ti, tj);
+    drawEigenlines(m);
+  }
+
+  function drawEigenlines(m: Mat2) {
+    eigenOverlay.replaceChildren();
+    for (const { segment, label, anchor, value } of eigenLines(m, view)) {
+      el('path', 'eigen-line', eigenOverlay, { d: segments([segment]) });
+      const tag = el('text', 'eigen-label', eigenOverlay, {
+        x: f(label[0]), y: f(label[1]), 'text-anchor': anchor,
+      });
+      tag.textContent = `λ = ${fmt(value)}`;
+    }
   }
 
   const pts = (list: readonly Vec2[]) => list.map((p) => `${f(p[0])},${f(p[1])}`).join(' ');

@@ -48,6 +48,7 @@
   --w-hair: 1px;
   --w-rule: 1.5px;
   --w-vector: 3px;
+  --eigen-dash: 8 4;
 
   /* motion */
   --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
@@ -170,6 +171,28 @@ body::before {
   stroke: var(--ink);
   stroke-width: var(--w-rule);
   stroke-opacity: 0.8;
+}
+
+.eigen-overlay {
+  pointer-events: none;
+}
+
+.eigen-line {
+  stroke: var(--eigen);
+  stroke-width: var(--w-rule);
+  stroke-dasharray: var(--eigen-dash);
+}
+
+.eigen-label {
+  fill: var(--eigen);
+  font-family: var(--font-mono);
+  font-size: var(--t-label);
+  font-variant-numeric: tabular-nums;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: var(--s-1);
+  stroke-linejoin: round;
 }
 
 .shaft {
