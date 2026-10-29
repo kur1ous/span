@@ -49,6 +49,7 @@
   --w-rule: 1.5px;
   --w-vector: 3px;
   --eigen-dash: 8 4;
+  --eigen-ring-radius: 40;
 
   /* motion */
   --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
@@ -181,6 +182,17 @@ body::before {
   stroke: var(--eigen);
   stroke-width: var(--w-rule);
   stroke-dasharray: var(--eigen-dash);
+}
+
+.eigen-ring {
+  stroke: var(--eigen);
+  stroke-width: var(--w-rule);
+  vector-effect: non-scaling-stroke;
+  transform: scale(var(--eigen-ring-radius));
+}
+
+.eigen-ring-label {
+  transform: translateY(calc(var(--eigen-ring-radius) * 1px + var(--s-4)));
 }
 
 .eigen-label {

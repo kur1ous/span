@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrowGeometry, eigenLines, orientationArc, paperGrid, transformedGrid } from './geometry';
+import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid } from './geometry';
 import type { Vec2 } from './math/mat2';
 
 const view = { width: 200, height: 200, scale: 50 };
@@ -37,10 +37,46 @@ describe('eigenlines', () => {
     close(lines[1]!.segment, [[0, 100 - 100 / 3], [200, 100 + 100 / 3]]);
   });
 
-  it('draws no lines for a complex pair or the separate repeated-root case', () => {
+  it.each([
+    { m: { a: 1, b: 2, c: 0, d: 1 }, ends: [[0, 100], [200, 100]] as Vec2[] },
+    { m: { a: 1, b: 0, c: 2, d: 1 }, ends: [[100, 200], [100, 0]] as Vec2[] },
+    { m: { a: 2, b: -1, c: 1, d: 0 }, ends: [[0, 200], [200, 0]] as Vec2[] },
+  ])('draws just the eigenspace of a defective matrix $m', ({ m, ends }) => {
+    const lines = eigenLines(m, view);
+    expect(lines).toHaveLength(1);
+    close(lines[0]!.segment, ends);
+    expect(lines[0]!.value).toBe(1);
+    expect(lines[0]!.caption).toBe('one line only');
+    expect(eigenRing(m)).toBeNull();
+  });
+
+  it('draws no lines for a complex pair or scalar matrix', () => {
     expect(eigenLines({ a: 0, b: -1, c: 1, d: 0 }, view)).toEqual([]);
     expect(eigenLines({ a: 1, b: 0, c: 0, d: 1 }, view)).toEqual([]);
-    expect(eigenLines({ a: 1, b: 1, c: 0, d: 1 }, view)).toEqual([]);
+  });
+});
+
+describe('scalar eigenvalue ring', () => {
+  it.each([0, 1, -2, 3])('marks every direction for %s times the identity', (value) => {
+    const m = { a: value, b: 0, c: 0, d: value };
+    const ring = eigenRing(m)!;
+    expect(ring.value).toBe(value);
+    expect(ring.ticks).toHaveLength(24);
+    expect(eigenLines(m, view)).toEqual([]);
+    close(ring.ticks[0]!, [[0.85, 0], [1, 0]]);
+    close(ring.ticks[6]!, [[0, 0.85], [0, 1]]);
+    close(ring.ticks[12]!, [[-0.85, 0], [-1, 0]]);
+    close(ring.ticks[18]!, [[0, -0.85], [0, -1]]);
+    for (const [inner, outer] of ring.ticks) {
+      expect(Math.hypot(...inner)).toBeCloseTo(0.85, 12);
+      expect(Math.hypot(...outer)).toBeCloseTo(1, 12);
+      expect(inner[0] * outer[1] - inner[1] * outer[0]).toBeCloseTo(0, 12);
+    }
+  });
+
+  it('does not suggest every direction for distinct or complex eigenvalues', () => {
+    expect(eigenRing({ a: 2, b: 0, c: 0, d: 1 })).toBeNull();
+    expect(eigenRing({ a: 0, b: -1, c: 1, d: 0 })).toBeNull();
   });
 });
 

@@ -12,7 +12,7 @@ import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
 import { nearEigendirection } from './math/probe';
 import type { Which } from './edit';
 import { fmt } from './format';
-import { arrowGeometry, eigenLines, orientationArc, paperGrid, transformedGrid } from './geometry';
+import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid } from './geometry';
 import { centroid, polygonArea, unitSquareImage } from './region';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
@@ -215,12 +215,26 @@ export function createPlane(host: HTMLElement): Plane {
 
   function drawEigenlines(m: Mat2) {
     eigenOverlay.replaceChildren();
-    for (const { segment, label, anchor, value } of eigenLines(m, view)) {
+    const ring = eigenRing(m);
+    if (ring) {
+      const o = toScreen(view, [0, 0]);
+      const group = el('g', undefined, eigenOverlay, { transform: `translate(${f(o[0])} ${f(o[1])})` });
+      // Keep unit coordinates precise before the CSS radius scales them up.
+      const d = ring.ticks.map(([p, q]) => `M${p[0]} ${p[1]}L${q[0]} ${q[1]}`).join('');
+      el('path', 'eigen-ring', group, { d });
+      const tag = el('text', 'eigen-label eigen-ring-label', group, { 'text-anchor': 'middle' });
+      tag.textContent = `λ = ${fmt(ring.value)} · every direction`;
+      eigenOverlay.setAttribute('aria-label', `Eigenvalue ${fmt(ring.value)}: every direction is an eigenvector`);
+      return;
+    }
+    const lines = eigenLines(m, view);
+    eigenOverlay.setAttribute('aria-label', lines.length === 1 ? 'Eigenlines: one line only' : 'Eigenlines');
+    for (const { segment, label, anchor, value, caption } of lines) {
       el('path', 'eigen-line', eigenOverlay, { d: segments([segment]) });
       const tag = el('text', 'eigen-label', eigenOverlay, {
         x: f(label[0]), y: f(label[1]), 'text-anchor': anchor,
       });
-      tag.textContent = `λ = ${fmt(value)}`;
+      tag.textContent = `λ = ${fmt(value)}${caption ? ` · ${caption}` : ''}`;
     }
   }
 

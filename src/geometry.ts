@@ -6,7 +6,7 @@ type Segment = readonly [Vec2, Vec2];
 
 export function eigenLines(m: Mat2, view: View) {
   const e = eigen(m);
-  if (e.kind !== 'real') return [];
+  if (e.kind === 'complex' || (e.kind === 'repeated' && !e.defective)) return [];
   const o = toScreen(view, [0, 0]);
   return e.vectors.map(([x, y], i) => {
     // Each line reaches whichever edge it meets first, including axis directions.
@@ -17,8 +17,21 @@ export function eigenLines(m: Mat2, view: View) {
     const side = i === 0 ? 1 : -1;
     const label: Vec2 = [o[0] + side * dx * 0.85, o[1] + side * dy * 0.85];
     const anchor = Math.abs(x) < 1e-12 ? 'middle' : side * x > 0 ? 'end' : 'start';
-    return { segment, label, anchor, value: e.values[i]! };
+    return { segment, label, anchor, value: e.kind === 'real' ? e.values[i]! : e.value,
+      caption: e.kind === 'repeated' ? 'one line only' : '' };
   });
+}
+
+export function eigenRing(m: Mat2) {
+  const e = eigen(m);
+  if (e.kind !== 'repeated' || e.defective) return null;
+  // Unit geometry lets the stylesheet set the ring size without scaling its stroke.
+  const ticks = Array.from({ length: 24 }, (_, i): Segment => {
+    const angle = i * Math.PI / 12;
+    const x = Math.cos(angle), y = Math.sin(angle);
+    return [[0.85 * x, 0.85 * y], [x, y]];
+  });
+  return { ticks, value: e.value };
 }
 
 export function paperGrid(view: View) {
