@@ -302,6 +302,26 @@ body::before {
 .handle-i .ring { stroke: var(--i-hat); }
 .handle-j .ring { stroke: var(--j-hat); }
 
+.probe-overlay { color: var(--ink); pointer-events: none; }
+.probe-overlay.is-aligned { color: var(--eigen); }
+.probe-source { stroke: currentColor; stroke-dasharray: var(--eigen-dash); }
+.probe-image { stroke: currentColor; stroke-width: var(--w-rule); }
+.probe-head, .probe-label { fill: currentColor; }
+.probe-label-source { transform: translateY(calc(-1 * var(--s-5))); }
+.handle-v .ring { stroke: var(--ink); }
+.handle-v.is-aligned .ring { stroke: var(--eigen); }
+
+.probe-note {
+  position: absolute;
+  bottom: var(--s-2);
+  left: var(--s-2);
+  right: var(--s-2);
+  margin: 0;
+  padding: var(--s-1) var(--s-2);
+  font-size: var(--t-label);
+  pointer-events: none;
+}
+
 .handle:hover .ring,
 .handle.is-dragging .ring {
   fill-opacity: 0.3;

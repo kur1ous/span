@@ -1,4 +1,4 @@
-import { clampTo, getColumn, nudge, snap, withColumn, type Which } from './edit';
+import { clampTo, getColumn, nudge, snap, withColumn } from './edit';
 import type { Mat2, Vec2 } from './math/mat2';
 import type { Plane } from './plane';
 import { toWorld, worldBounds } from './view';
@@ -16,7 +16,7 @@ const ARROWS: Record<string, Vec2> = {
 };
 
 /**
- * Wire pointer drag and arrow-key nudging to the two handles. `onGrab` fires
+ * Wire pointer drag and arrow-key nudging to the vector handles. `onGrab` fires
  * when the user takes over, so any running animation can be cancelled.
  */
 export function bindHandles(
@@ -30,8 +30,10 @@ export function bindHandles(
     return [b.max[0] - MARGIN, b.max[1] - MARGIN];
   };
 
-  for (const which of ['i', 'j'] as Which[]) {
+  for (const which of ['i', 'j', 'v'] as const) {
     const handle = plane.handles[which];
+    const tipValue = () => which === 'v' ? plane.probe() : getColumn(get(), which);
+    const move = (v: Vec2) => which === 'v' ? plane.setProbe(v) : set(withColumn(get(), which, v));
     let offset: Vec2 | null = null;
     let pointerId: number | null = null;
 
@@ -49,7 +51,7 @@ export function bindHandles(
       handle.classList.add('is-dragging');
       // remember where inside the ring it was grabbed so the tip does not jump
       const p = pointerWorld(e);
-      const tip = getColumn(get(), which);
+      const tip = tipValue();
       offset = [tip[0] - p[0], tip[1] - p[1]];
       e.preventDefault();
     });
@@ -59,7 +61,7 @@ export function bindHandles(
       const p = pointerWorld(e);
       let v: Vec2 = [p[0] + offset[0], p[1] + offset[1]];
       if (!e.altKey) v = snap(v);
-      set(withColumn(get(), which, clampTo(v, limit())));
+      move(clampTo(v, limit()));
     });
 
     const release = (e: PointerEvent) => {
@@ -79,8 +81,8 @@ export function bindHandles(
       e.preventDefault();
       onGrab();
       const step = e.shiftKey ? COARSE_STEP : STEP;
-      const next = nudge(getColumn(get(), which), dir[0] * step, dir[1] * step);
-      set(withColumn(get(), which, clampTo(next, limit())));
+      const next = nudge(tipValue(), dir[0] * step, dir[1] * step);
+      move(clampTo(next, limit()));
     });
   }
 }

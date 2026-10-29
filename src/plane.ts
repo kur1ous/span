@@ -8,7 +8,8 @@
   gives focus, arrow-key handling and screen-reader labels for free.
 */
 
-import { columns, type Mat2, type Vec2 } from './math/mat2';
+import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
+import { nearEigendirection } from './math/probe';
 import type { Which } from './edit';
 import { fmt } from './format';
 import { arrowGeometry, eigenLines, orientationArc, paperGrid, transformedGrid } from './geometry';
@@ -51,14 +52,16 @@ export interface OverlayState {
 
 export interface Plane {
   readonly svg: SVGSVGElement;
-  /** focusable grab rings sitting on the tip of each image vector */
-  readonly handles: Readonly<Record<Which, SVGGElement>>;
+  /** focusable grab rings on the basis images and probe vector */
+  readonly handles: Readonly<Record<Which | 'v', SVGGElement>>;
+  probe(): Vec2;
+  setProbe(v: Vec2): void;
   view(): View;
   render(m: Mat2): void;
   setOverlays(state: Readonly<OverlayState>): void;
 }
 
-function makeHandle(which: Which, parent: Element): SVGGElement {
+function makeHandle(which: Which | 'v', parent: Element): SVGGElement {
   const g = el('g', `handle handle-${which}`, parent, { tabindex: '0', role: 'application' });
   // the hit disc is invisible but wide, so fingers and shaky mice can still grab
   el('circle', 'hit', g, { r: '24' });
@@ -107,10 +110,25 @@ export function createPlane(host: HTMLElement): Plane {
   labelJ.textContent = 'ĵ';
   const origin = el('circle', 'origin', vecs, { r: '3.5' });
 
-  const handles = { i: makeHandle('i', svg), j: makeHandle('j', svg) };
+  const probeOverlay = el('g', 'probe-overlay', svg);
+  const shaftV = el('line', 'shaft probe-source', probeOverlay);
+  const shaftAv = el('line', 'shaft probe-image', probeOverlay);
+  const headV = el('polygon', 'probe-head', probeOverlay);
+  const headAv = el('polygon', 'probe-head', probeOverlay);
+  const labelV = el('text', 'vec-label probe-label probe-label-source', probeOverlay);
+  const labelAv = el('text', 'vec-label probe-label', probeOverlay);
+  labelV.textContent = 'v';
+  labelAv.textContent = 'Av';
+  const probeNote = document.createElement('p');
+  probeNote.className = 'probe-note';
+  probeNote.setAttribute('role', 'status');
+  host.appendChild(probeNote);
+
+  const handles = { i: makeHandle('i', svg), j: makeHandle('j', svg), v: makeHandle('v', svg) };
 
   let view = makeView(host.clientWidth || 1, host.clientHeight || 1);
   let current: Mat2 = { a: 1, b: 0, c: 0, d: 1 };
+  let probe: Vec2 = [2, 1.5];
 
   /** Everything that depends only on the frame size: the static paper. */
   function drawPaper() {
@@ -175,6 +193,24 @@ export function createPlane(host: HTMLElement): Plane {
 
     drawDeterminant(m, ti, tj);
     drawEigenlines(m);
+    drawProbe(m);
+  }
+
+  function drawProbe(m: Mat2) {
+    const image = apply(m, probe);
+    const tip = toScreen(view, probe);
+    drawArrow(shaftV, headV, labelV, tip);
+    drawArrow(shaftAv, headAv, labelAv, toScreen(view, image));
+    handles.v.setAttribute('transform', `translate(${f(tip[0])} ${f(tip[1])})`);
+    handles.v.setAttribute('aria-label',
+      `Probe v, at ${fmt(probe[0])}, ${fmt(probe[1])}. Image Av, at ${fmt(image[0])}, ${fmt(image[1])}. Arrow keys move v, shift for larger steps.`);
+    const aligned = nearEigendirection(m, probe);
+    probeOverlay.classList.toggle('is-aligned', aligned);
+    handles.v.classList.toggle('is-aligned', aligned);
+    const note = probe[0] === 0 && probe[1] === 0 ? 'v = 0 has no direction.'
+      : aligned ? 'Near an eigendirection: stays on its line.' : 'Drag v to compare it with Av.';
+    const text = image[0] === 0 && image[1] === 0 ? `${note} Av = 0.` : note;
+    if (probeNote.textContent !== text) probeNote.textContent = text;
   }
 
   function drawEigenlines(m: Mat2) {
@@ -235,6 +271,11 @@ export function createPlane(host: HTMLElement): Plane {
   return {
     svg,
     handles,
+    probe: () => probe,
+    setProbe(v) {
+      probe = v;
+      drawProbe(current);
+    },
     view: () => view,
     render(m) {
       current = m;
