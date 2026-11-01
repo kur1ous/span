@@ -43,7 +43,7 @@ export function bindHandles(
     };
 
     handle.addEventListener('pointerdown', (e) => {
-      if (pointerId !== null) return;
+      if (e.button !== 0 || pointerId !== null) return;
       onGrab();
       handle.setPointerCapture(e.pointerId);
       pointerId = e.pointerId;

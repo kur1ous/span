@@ -26,9 +26,9 @@ function setup(which: 'i' | 'v' = 'i') {
   const set = vi.fn((m: Mat2) => { matrix = m; });
   const grab = vi.fn();
   bindHandles(plane, () => matrix, set, grab);
-  const pointer = (type: string, pointerId: number, clientX = 325) => {
-    handle.dispatchEvent(Object.assign(new Event(type, { cancelable: true }), {
-      pointerId, clientX, clientY: 275, altKey: true,
+  const pointer = (type: string, pointerId: number, clientX = 325, button = 0) => {
+    return handle.dispatchEvent(Object.assign(new Event(type, { cancelable: true }), {
+      pointerId, clientX, clientY: 275, altKey: true, button,
     }));
   };
   return { pointer, set, grab, classes, captures, handle, probe: () => probe, matrix: () => matrix };
@@ -64,6 +64,23 @@ describe('probe controls', () => {
 });
 
 describe('handle pointer ownership', () => {
+  it.each([1, 2])('ignores button %i without interrupting animation or moving the handle', (button) => {
+    const h = setup();
+    expect(h.pointer('pointerdown', 1, 325, button)).toBe(true);
+    h.pointer('pointermove', 1, 375, button);
+    expect(h.grab).not.toHaveBeenCalled();
+    expect(h.handle.focus).not.toHaveBeenCalled();
+    expect(h.captures.size).toBe(0);
+    expect(h.classes.has('is-dragging')).toBe(false);
+    expect(h.set).not.toHaveBeenCalled();
+
+    h.pointer('pointerup', 1, 375, button);
+    h.pointer('pointerdown', 1);
+    h.pointer('pointermove', 1, 375);
+    expect(h.grab).toHaveBeenCalledTimes(1);
+    expect(h.matrix().a).toBe(2);
+  });
+
   it('ignores another pointer grabbing or moving the same ring', () => {
     const h = setup();
     h.pointer('pointerdown', 1);
