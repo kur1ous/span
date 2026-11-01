@@ -10,6 +10,7 @@
 
 import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
 import { nearEigendirection } from './math/probe';
+import { complexOrbit } from './math/orbit';
 import type { Which } from './edit';
 import { fmt } from './format';
 import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid } from './geometry';
@@ -98,6 +99,9 @@ export function createPlane(host: HTMLElement): Plane {
   const arcHead = el('polygon', 'orient-head', svg);
   const detLabel = el('text', 'det-label', svg);
   const eigenOverlay = el('g', 'eigen-overlay', svg, { 'aria-label': 'Eigenlines' });
+  const orbitOverlay = el('g', 'orbit-overlay', svg, {
+    role: 'group', 'aria-label': 'Probe orbit: A to the power n times v, n from 0 to 12',
+  });
 
   const vecs = el('g', 'vectors', svg);
   const shaftI = el('line', 'shaft shaft-i', vecs);
@@ -197,6 +201,16 @@ export function createPlane(host: HTMLElement): Plane {
   }
 
   function drawProbe(m: Mat2) {
+    orbitOverlay.replaceChildren();
+    const orbit = complexOrbit(m, probe).map((point) => toScreen(view, point));
+    orbitOverlay.style.display = orbit.length ? '' : 'none';
+    if (orbit.length) {
+      el('polyline', 'orbit-line', orbitOverlay, { points: pts(orbit) });
+      orbit.forEach((point, n) => {
+        const dot = el('circle', 'orbit-dot', orbitOverlay, { cx: f(point[0]), cy: f(point[1]) });
+        el('title', undefined, dot).textContent = `A^${n} v`;
+      });
+    }
     const image = apply(m, probe);
     const tip = toScreen(view, probe);
     drawArrow(shaftV, headV, labelV, tip);

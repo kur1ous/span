@@ -1,6 +1,7 @@
 import katex from 'katex';
 import { fmt } from './format';
 import { det, eigen, type Mat2, type Vec2 } from './math/mat2';
+import { complexPolar } from './math/orbit';
 
 // \htmlClass is the only extension we allow, so colours and the mono override
 // come from style.css instead of being baked into the TeX
@@ -46,12 +47,16 @@ export function eigenReadout(m: Mat2): { kind: string; tex: string; note: string
   let rows: string[];
   let note = '';
   if (e.kind === 'complex') {
+    const polar = complexPolar(e)!;
     rows = [
       `\\lambda_{\\pm}=${fmt(e.re)}\\pm ${fmt(e.im)}i`,
+      `|\\lambda_{\\pm}|=${fmt(polar.modulus)}`,
+      `\\arg(\\lambda_{\\pm})=\\pm ${fmt(polar.angle * 180 / Math.PI)}^\\circ`,
       `\\hat v_{\\pm}=\\begin{bmatrix}${fmt(e.vRe[0])}\\\\` +
         `${fmt(e.vRe[1])}\\pm ${fmt(e.vIm[1])}i\\end{bmatrix}`,
     ];
-    note = 'Conjugate unit vectors; no real eigendirections.';
+    note = 'Conjugate unit vectors; no real eigendirections. ' +
+      'The angle describes rotation in an eigenvector basis. Connected dots trace Aⁿv, n = 0…12.';
   } else if (e.kind === 'repeated') {
     rows = [`\\lambda_1=\\lambda_2=${fmt(e.value)}`];
     e.vectors.forEach((v, i) => rows.push(`\\hat v_${i + 1}=${vector(v)}`));

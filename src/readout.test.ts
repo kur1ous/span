@@ -37,6 +37,8 @@ describe('eigen readout', () => {
     const info = eigenReadout({ a: 1, b: -2, c: 2, d: 3 });
     expect(info.kind).toBe('Complex');
     expect(info.tex).toContain('\\lambda_{\\pm}=2.00\\pm 1.73i');
+    expect(info.tex).toContain('|\\lambda_{\\pm}|=2.65');
+    expect(info.tex).toContain('\\arg(\\lambda_{\\pm})=\\pm 40.89^\\circ');
     expect(info.tex).toContain(
       '\\hat v_{\\pm}=\\begin{bmatrix}-0.71\\\\0.35\\pm 0.61i\\end{bmatrix}',
     );

@@ -50,6 +50,7 @@
   --w-vector: 3px;
   --eigen-dash: 8 4;
   --eigen-ring-radius: 40;
+  --orbit-dot-radius: 3px;
 
   /* motion */
   --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
@@ -176,6 +177,19 @@ body::before {
 
 .eigen-overlay {
   pointer-events: none;
+}
+
+.orbit-overlay { pointer-events: none; }
+.orbit-line {
+  fill: none;
+  stroke: var(--eigen);
+  stroke-width: var(--w-rule);
+}
+.orbit-dot {
+  r: var(--orbit-dot-radius);
+  fill: var(--eigen);
+  stroke: var(--paper);
+  stroke-width: var(--w-hair);
 }
 
 .eigen-line {
