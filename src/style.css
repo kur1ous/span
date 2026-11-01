@@ -193,6 +193,24 @@ body::before {
   stroke-width: var(--w-rule);
 }
 
+.singular-axis {
+  stroke: var(--ink-soft);
+  stroke-width: var(--w-vector);
+}
+.singular-minor .singular-axis { stroke-dasharray: var(--circle-dash); }
+.singular-label {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--t-label);
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: var(--s-1);
+  stroke-linejoin: round;
+  transform: translate(var(--s-2), calc(-1 * var(--s-3)));
+}
+.singular-minor .singular-label { transform: translate(var(--s-2), var(--s-5)); }
+
 .orbit-overlay { pointer-events: none; }
 .orbit-line {
   fill: none;

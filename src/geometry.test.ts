@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid, unitCircleImage } from './geometry';
+import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, singularAxes, transformedGrid, unitCircleImage } from './geometry';
 import type { Vec2 } from './math/mat2';
 
 const view = { width: 200, height: 200, scale: 50 };
@@ -10,6 +10,47 @@ const close = (actual: readonly Vec2[], expected: readonly Vec2[]) => {
     expect(actual[i]![1]).toBeCloseTo(p[1], 12);
   });
 };
+
+describe('singular value semi-axes', () => {
+  it('uses left singular directions for a rotated ellipse, independent of source rotation', () => {
+    // Both images have radii 3 and 1, rotated with cos = 3/5, sin = 4/5.
+    for (const m of [{ a: 1.8, b: -0.8, c: 2.4, d: 0.6 },
+      { a: 0.8, b: 1.8, c: -0.6, d: 2.4 }]) {
+      const axes = singularAxes(m, view);
+      expect(axes[0]!.value).toBeCloseTo(3, 12);
+      expect(axes[1]!.value).toBeCloseTo(1, 12);
+      close(axes[0]!.segment, [[100, 100], [190, -20]]);
+      close(axes[1]!.segment, [[100, 100], [60, 70]]);
+    }
+  });
+
+  it('keeps reflected radii nonnegative and follows the resized view', () => {
+    const axes = singularAxes({ a: 3, b: 0, c: 0, d: -2 },
+      { width: 600, height: 400, scale: 100 });
+    expect(axes.map((axis) => axis.value)).toEqual([3, 2]);
+    close(axes[0]!.segment, [[300, 200], [600, 200]]);
+    close(axes[1]!.segment, [[300, 200], [300, 400]]);
+  });
+
+  it('keeps zero semi-axes at the origin for rank-one and zero matrices', () => {
+    const axes = singularAxes({ a: 1, b: 1, c: 0, d: 0 }, view);
+    expect(axes[0]!.value).toBeCloseTo(Math.sqrt(2), 12);
+    expect(axes[1]!.value).toBe(0);
+    close(axes[0]!.segment, [[100, 100], [100 + 50 * Math.sqrt(2), 100]]);
+    close(axes[1]!.segment, [[100, 100], [100, 100]]);
+    for (const axis of singularAxes({ a: 0, b: 0, c: 0, d: 0 }, view)) {
+      expect(axis.value).toBe(0);
+      close(axis.segment, [[100, 100], [100, 100]]);
+    }
+  });
+
+  it('draws equal perpendicular radii for a circle', () => {
+    const axes = singularAxes({ a: 2, b: 0, c: 0, d: 2 }, view);
+    expect(axes.map((axis) => axis.value)).toEqual([2, 2]);
+    close(axes[0]!.segment, [[100, 100], [200, 100]]);
+    close(axes[1]!.segment, [[100, 100], [100, 0]]);
+  });
+});
 
 describe('unit circle image', () => {
   it('keeps the identity image on the unit circle', () => {

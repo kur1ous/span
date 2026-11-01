@@ -1,8 +1,18 @@
-import { apply, eigen, type Mat2, type Vec2 } from './math/mat2';
+import { apply, columns, eigen, svd, type Mat2, type Vec2 } from './math/mat2';
 import { gridStops, sourceExtent } from './grid';
 import { toScreen, worldBounds, type View } from './view';
 
 type Segment = readonly [Vec2, Vec2];
+
+export function singularAxes(m: Mat2, view: View) {
+  const { u, s } = svd(m);
+  const origin = toScreen(view, [0, 0]);
+  return columns(u).map(([x, y], i) => {
+    const value = s[i]!;
+    const segment: Segment = [origin, toScreen(view, [value * x, value * y])];
+    return { segment, value };
+  });
+}
 
 export function unitCircleImage(m: Mat2, view: View): Vec2[] {
   // A(cos t, sin t) combines the columns as conjugate semi-diameters.

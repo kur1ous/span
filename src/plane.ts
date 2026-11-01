@@ -13,7 +13,7 @@ import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
 import type { Which } from './edit';
 import { fmt } from './format';
-import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid, unitCircleImage } from './geometry';
+import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, singularAxes, transformedGrid, unitCircleImage } from './geometry';
 import { centroid, polygonArea, unitSquareImage } from './region';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
@@ -97,10 +97,11 @@ export function createPlane(host: HTMLElement): Plane {
   const warp = el('path', 'warp', svg);
   const warpAxes = el('path', 'warp-axes', svg);
   const circleOverlay = el('g', 'circle-overlay', svg, {
-    role: 'group', 'aria-label': 'Dashed unit circle and its solid image under A',
+    role: 'group', 'aria-label': 'Dashed unit circle, its solid image under A, and singular value semi-axes',
   });
   const unitCircle = el('circle', 'unit-circle', circleOverlay);
   const circleImage = el('polygon', 'circle-image', circleOverlay);
+  const singularOverlay = el('g', 'singular-overlay', circleOverlay);
   const arc = el('path', 'orient-arc', svg);
   const arcHead = el('polygon', 'orient-head', svg);
   const detLabel = el('text', 'det-label', svg);
@@ -194,6 +195,17 @@ export function createPlane(host: HTMLElement): Plane {
     unitCircle.setAttribute('cy', f(o[1]));
     unitCircle.setAttribute('r', f(view.scale));
     circleImage.setAttribute('points', pts(unitCircleImage(m, view)));
+    singularOverlay.replaceChildren();
+    singularAxes(m, view).forEach(({ segment, value }, i) => {
+      const group = el('g', i === 0 ? 'singular-major' : 'singular-minor', singularOverlay);
+      el('path', 'singular-axis', group, { d: segments([segment]) });
+      const tag = el('text', 'singular-label', group, {
+        x: f(segment[1][0]), y: f(segment[1][1]),
+      });
+      tag.textContent = `${i === 0 ? 'σ₁' : 'σ₂'} = ${fmt(value)}`;
+      el('title', undefined, group).textContent =
+        `${i === 0 ? 'Major' : 'Minor'} semi-axis: singular value ${fmt(value)}`;
+    });
 
     const [ci, cj] = columns(m);
     const ti = toScreen(view, ci);
