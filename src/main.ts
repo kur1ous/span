@@ -15,7 +15,7 @@ const readout = createReadout(
   document.getElementById('eigen-readout')!,
 );
 
-const overlays: OverlayState = { unitSquare: true, quarterRules: true, tickLabels: true };
+const overlays: OverlayState = { unitSquare: true, unitCircle: false, quarterRules: true, tickLabels: true };
 for (const key of Object.keys(overlays) as (keyof OverlayState)[]) {
   const checkbox = document.getElementById(`overlay-${key}`) as HTMLInputElement;
   checkbox.checked = overlays[key];

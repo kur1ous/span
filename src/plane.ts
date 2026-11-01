@@ -13,7 +13,7 @@ import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
 import type { Which } from './edit';
 import { fmt } from './format';
-import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid } from './geometry';
+import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid, unitCircleImage } from './geometry';
 import { centroid, polygonArea, unitSquareImage } from './region';
 import { makeView, toScreen, worldBounds, type View } from './view';
 
@@ -47,6 +47,7 @@ function segments(list: readonly (readonly [Vec2, Vec2])[]): string {
 
 export interface OverlayState {
   unitSquare: boolean;
+  unitCircle: boolean;
   quarterRules: boolean;
   tickLabels: boolean;
 }
@@ -95,6 +96,11 @@ export function createPlane(host: HTMLElement): Plane {
   const detRegion = el('polygon', 'det-region', svg);
   const warp = el('path', 'warp', svg);
   const warpAxes = el('path', 'warp-axes', svg);
+  const circleOverlay = el('g', 'circle-overlay', svg, {
+    role: 'group', 'aria-label': 'Dashed unit circle and its solid image under A',
+  });
+  const unitCircle = el('circle', 'unit-circle', circleOverlay);
+  const circleImage = el('polygon', 'circle-image', circleOverlay);
   const arc = el('path', 'orient-arc', svg);
   const arcHead = el('polygon', 'orient-head', svg);
   const detLabel = el('text', 'det-label', svg);
@@ -184,6 +190,10 @@ export function createPlane(host: HTMLElement): Plane {
     const o = toScreen(view, [0, 0]);
     origin.setAttribute('cx', f(o[0]));
     origin.setAttribute('cy', f(o[1]));
+    unitCircle.setAttribute('cx', f(o[0]));
+    unitCircle.setAttribute('cy', f(o[1]));
+    unitCircle.setAttribute('r', f(view.scale));
+    circleImage.setAttribute('points', pts(unitCircleImage(m, view)));
 
     const [ci, cj] = columns(m);
     const ti = toScreen(view, ci);
@@ -315,6 +325,7 @@ export function createPlane(host: HTMLElement): Plane {
         node.style.visibility = state.unitSquare ? '' : 'hidden';
       }
       paperFine.style.visibility = state.quarterRules ? '' : 'hidden';
+      circleOverlay.style.visibility = state.unitCircle ? '' : 'hidden';
       ticks.style.visibility = state.tickLabels ? '' : 'hidden';
     },
   };

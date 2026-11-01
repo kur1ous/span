@@ -4,6 +4,15 @@ import { toScreen, worldBounds, type View } from './view';
 
 type Segment = readonly [Vec2, Vec2];
 
+export function unitCircleImage(m: Mat2, view: View): Vec2[] {
+  // A(cos t, sin t) combines the columns as conjugate semi-diameters.
+  // Screen-space points also preserve the collapsed image of a singular matrix.
+  return Array.from({ length: 128 }, (_, i) => {
+    const angle = i * Math.PI / 64;
+    return toScreen(view, apply(m, [Math.cos(angle), Math.sin(angle)]));
+  });
+}
+
 export function eigenLines(m: Mat2, view: View) {
   const e = eigen(m);
   if (e.kind === 'complex' || (e.kind === 'repeated' && !e.defective)) return [];

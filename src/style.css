@@ -48,6 +48,7 @@
   --w-hair: 1px;
   --w-rule: 1.5px;
   --w-vector: 3px;
+  --circle-dash: 4 4;
   --eigen-dash: 8 4;
   --eigen-ring-radius: 40;
   --orbit-dot-radius: 3px;
@@ -177,6 +178,19 @@ body::before {
 
 .eigen-overlay {
   pointer-events: none;
+}
+
+.circle-overlay { pointer-events: none; }
+.unit-circle {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: var(--w-hair);
+  stroke-dasharray: var(--circle-dash);
+}
+.circle-image {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: var(--w-rule);
 }
 
 .orbit-overlay { pointer-events: none; }

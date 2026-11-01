@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid } from './geometry';
+import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, transformedGrid, unitCircleImage } from './geometry';
 import type { Vec2 } from './math/mat2';
 
 const view = { width: 200, height: 200, scale: 50 };
@@ -10,6 +10,37 @@ const close = (actual: readonly Vec2[], expected: readonly Vec2[]) => {
     expect(actual[i]![1]).toBeCloseTo(p[1], 12);
   });
 };
+
+describe('unit circle image', () => {
+  it('keeps the identity image on the unit circle', () => {
+    const points = unitCircleImage({ a: 1, b: 0, c: 0, d: 1 }, view);
+    expect(points).toHaveLength(128);
+    for (const [x, y] of points) expect(Math.hypot(x - 100, y - 100)).toBeCloseTo(50, 12);
+  });
+
+  it('uses both columns for a sheared ellipse, including between the column tips', () => {
+    const points = unitCircleImage({ a: 2, b: 1, c: 0, d: 1 }, view);
+    close([points[0]!, points[32]!, points[64]!, points[96]!],
+      [[200, 100], [150, 50], [0, 100], [50, 150]]);
+    close([points[16]!], [[100 + 150 / Math.sqrt(2), 100 - 50 / Math.sqrt(2)]]);
+  });
+
+  it('maps a rotated, reflected ellipse into a resized frame', () => {
+    const points = unitCircleImage({ a: 0, b: 2, c: 1, d: 0 },
+      { width: 600, height: 400, scale: 100 });
+    close([points[0]!, points[32]!, points[64]!, points[96]!],
+      [[300, 100], [500, 200], [300, 300], [100, 200]]);
+  });
+
+  it('collapses to a segment or point without losing finite geometry', () => {
+    const points = unitCircleImage({ a: 1, b: 1, c: 0, d: 0 }, view);
+    expect(points.every(([x, y]) => Number.isFinite(x) && y === 100)).toBe(true);
+    expect(Math.max(...points.map(([x]) => x))).toBeCloseTo(100 + 50 * Math.sqrt(2), 12);
+    expect(Math.min(...points.map(([x]) => x))).toBeCloseTo(100 - 50 * Math.sqrt(2), 12);
+    expect(unitCircleImage({ a: 0, b: 0, c: 0, d: 0 }, view)
+      .every(([x, y]) => x === 100 && y === 100)).toBe(true);
+  });
+});
 
 describe('eigenlines', () => {
   it('clips horizontal and vertical eigenlines and keeps their eigenvalues', () => {
