@@ -1,7 +1,34 @@
 import katex from 'katex';
 import { describe, expect, it } from 'vitest';
 import { diag, type Mat2 } from './math/mat2';
-import { eigenReadout } from './readout';
+import { detNote, eigenReadout } from './readout';
+
+describe('determinant note', () => {
+  it.each([0.0001, 0.0049])('preserves orientation for a small nonzero determinant %s', (area) => {
+    expect(detNote(diag(area, 1))).toBe(
+      `Areas scale by ${area.toExponential(2)}. Orientation is kept.`,
+    );
+    expect(detNote(diag(-area, 1))).toBe(
+      `Areas scale by ${area.toExponential(2)}. Orientation is flipped: the plane is mirrored.`,
+    );
+  });
+
+  it('distinguishes collapse to a point from collapse to a line', () => {
+    expect(detNote(diag(0, 0))).toBe(
+      'Flattened: the plane collapses onto a point and area goes to zero.',
+    );
+    expect(detNote({ a: 1, b: 2, c: 2, d: 4 })).toBe(
+      'Flattened: the plane collapses onto a line and area goes to zero.',
+    );
+  });
+
+  it('keeps two decimal places when the area rounds to a nonzero value', () => {
+    expect(detNote(diag(0.005, 1))).toBe('Areas scale by 0.01. Orientation is kept.');
+    expect(detNote(diag(-2, 1))).toBe(
+      'Areas scale by 2.00. Orientation is flipped: the plane is mirrored.',
+    );
+  });
+});
 
 describe('eigen readout', () => {
   it('pairs distinct eigenvalues with normalized vectors', () => {

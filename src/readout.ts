@@ -77,12 +77,15 @@ export function eigenReadout(m: Mat2): { kind: string; tex: string; note: string
   };
 }
 
-/** Below this the plane is visually flat, whatever the sign says. */
-const FLAT = 0.005;
-
-function detNote(d: number): string {
-  if (Math.abs(d) < FLAT) return 'Flattened: the plane collapses onto a line and area goes to zero.';
-  const scale = `Areas scale by ${fmt(Math.abs(d))}.`;
+export function detNote(m: Mat2): string {
+  const d = det(m);
+  if (d === 0) {
+    const image = m.a === 0 && m.b === 0 && m.c === 0 && m.d === 0 ? 'point' : 'line';
+    return `Flattened: the plane collapses onto a ${image} and area goes to zero.`;
+  }
+  const area = Math.abs(d);
+  // A rounded 0.00 must not imply that a small invertible map loses dimension.
+  const scale = `Areas scale by ${area < 0.005 ? area.toExponential(2) : fmt(area)}.`;
   return d > 0
     ? `${scale} Orientation is kept.`
     : `${scale} Orientation is flipped: the plane is mirrored.`;
@@ -125,7 +128,7 @@ export function createReadout(
       classification.textContent = classify(m).join(' · ') || 'general';
       katex.render(columnsTex(m), cols, OPTIONS);
       katex.render(detTex(m), detBox, OPTIONS);
-      note.textContent = detNote(det(m));
+      note.textContent = detNote(m);
       const info = eigenReadout(m);
       kind.textContent = info.kind;
       katex.render(info.tex, eigenBox, OPTIONS);
