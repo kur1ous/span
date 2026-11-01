@@ -2,6 +2,7 @@ import katex from 'katex';
 import { fmt } from './format';
 import { det, eigen, type Mat2, type Vec2 } from './math/mat2';
 import { complexPolar } from './math/orbit';
+import { classify } from './math/classify';
 
 // \htmlClass is the only extension we allow, so colours and the mono override
 // come from style.css instead of being baked into the TeX
@@ -101,8 +102,10 @@ export function createReadout(
   matrixRoot: HTMLElement, detRoot: HTMLElement, eigenRoot: HTMLElement,
 ): Readout {
   const matrix = div('tex tex-matrix');
+  const classification = document.createElement('p');
+  classification.className = 'matrix-kind';
   const cols = div('tex tex-columns');
-  matrixRoot.replaceChildren(matrix, cols);
+  matrixRoot.replaceChildren(matrix, classification, cols);
 
   const detBox = div('tex tex-det');
   const note = document.createElement('p');
@@ -119,6 +122,7 @@ export function createReadout(
   return {
     update(m) {
       katex.render(matrixTex(m), matrix, OPTIONS);
+      classification.textContent = classify(m).join(' · ') || 'general';
       katex.render(columnsTex(m), cols, OPTIONS);
       katex.render(detTex(m), detBox, OPTIONS);
       note.textContent = detNote(det(m));
