@@ -549,16 +549,19 @@ body::before {
   color: var(--eigen);
 }
 
-.tex-eigen {
+.tex-eigen,
+.tex-svd {
   overflow-x: auto;
 }
 
-.tex-eigen .katex {
+.tex-eigen .katex,
+.tex-svd .katex {
   font-size: var(--t-body);
 }
 
 .det-note,
-.eigen-note {
+.eigen-note,
+.svd-note {
   margin: var(--s-3) 0 0;
   padding-top: var(--s-3);
   border-top: var(--w-hair) dashed var(--rule-strong);

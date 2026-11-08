@@ -13,6 +13,7 @@ const readout = createReadout(
   document.getElementById('matrix-readout')!,
   document.getElementById('det-readout')!,
   document.getElementById('eigen-readout')!,
+  document.getElementById('svd-readout')!,
 );
 
 const overlays: OverlayState = { unitSquare: true, unitCircle: false, quarterRules: true, tickLabels: true };

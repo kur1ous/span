@@ -1,7 +1,7 @@
 import katex from 'katex';
 import { describe, expect, it } from 'vitest';
 import { diag, type Mat2 } from './math/mat2';
-import { detNote, eigenReadout } from './readout';
+import { detNote, eigenReadout, svdReadout } from './readout';
 
 describe('determinant note', () => {
   it.each([0.0001, 0.0049])('preserves orientation for a small nonzero determinant %s', (area) => {
@@ -79,6 +79,41 @@ describe('eigen readout', () => {
     { a: 1, b: -2, c: 2, d: 3 },
   ])('renders valid KaTeX with accessible MathML for %o', (m) => {
     const html = katex.renderToString(eigenReadout(m).tex, { throwOnError: true });
+    expect(html).toContain('<math');
+    expect(html).not.toContain('katex-error');
+  });
+});
+
+describe('SVD readout', () => {
+  it('shows U, the singular values, and the transpose of V in row order', () => {
+    const info = svdReadout({ a: 1.8, b: 2.4, c: -0.8, d: 0.6 });
+    expect(info.tex).toContain('A=U\\Sigma V^{\\mathsf T}');
+    expect(info.tex).toContain('U=\\begin{bmatrix}1.00 & 0.00\\\\0.00 & 1.00\\end{bmatrix}');
+    expect(info.tex).toContain('\\Sigma=\\begin{bmatrix}3.00 & 0.00\\\\0.00 & 1.00\\end{bmatrix}');
+    expect(info.tex).toContain('V^{\\mathsf T}=\\begin{bmatrix}0.60 & 0.80\\\\-0.80 & 0.60\\end{bmatrix}');
+    expect(info.note).toBe('');
+    expect(info.tex).not.toContain('-0.00');
+  });
+
+  it('identifies the reflected factor while keeping singular values nonnegative', () => {
+    const info = svdReadout(diag(3, -1));
+    expect(info.note).toBe('U carries a reflection (det = -1).');
+    expect(info.tex).toContain('U=\\begin{bmatrix}1.00 & 0.00\\\\0.00 & -1.00\\end{bmatrix}');
+    expect(info.tex).toContain('\\Sigma=\\begin{bmatrix}3.00 & 0.00\\\\0.00 & 1.00\\end{bmatrix}');
+  });
+
+  it.each([0, 3])('shows the zero singular value for diag(%s, 0)', (value) => {
+    const info = svdReadout(diag(value, 0));
+    expect(info.tex).toContain(`\\Sigma=\\begin{bmatrix}${value.toFixed(2)} & 0.00\\\\0.00 & 0.00\\end{bmatrix}`);
+    expect(info.note).toBe('');
+  });
+
+  it.each<Mat2>([
+    diag(1, 1), diag(3, -1), diag(3, 0), diag(0, 0),
+    { a: 1, b: 2, c: 0, d: 1 },
+    { a: 0, b: -1, c: 1, d: 0 },
+  ])('renders valid KaTeX with accessible MathML for %o', (m) => {
+    const html = katex.renderToString(svdReadout(m).tex, { throwOnError: true });
     expect(html).toContain('<math');
     expect(html).not.toContain('katex-error');
   });

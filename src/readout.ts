@@ -1,6 +1,6 @@
 import katex from 'katex';
 import { fmt } from './format';
-import { det, eigen, type Mat2, type Vec2 } from './math/mat2';
+import { det, diag, eigen, svd, transpose, type Mat2, type Vec2 } from './math/mat2';
 import { complexPolar } from './math/orbit';
 import { classify } from './math/classify';
 
@@ -77,6 +77,25 @@ export function eigenReadout(m: Mat2): { kind: string; tex: string; note: string
   };
 }
 
+export function svdReadout(m: Mat2): { tex: string; note: string } {
+  const { u, s, v } = svd(m);
+  const factor = (name: string, matrix: Mat2) =>
+    `${name}=\\begin{bmatrix}${fmt(matrix.a)} & ${fmt(matrix.b)}\\\\` +
+    `${fmt(matrix.c)} & ${fmt(matrix.d)}\\end{bmatrix}`;
+  const rows = [
+    'A=U\\Sigma V^{\\mathsf T}',
+    factor('U', u),
+    factor('\\Sigma', diag(s[0], s[1])),
+    factor('V^{\\mathsf T}', transpose(v)),
+  ];
+  const reflections = [det(u) < 0 ? 'U' : '', det(v) < 0 ? 'V' : ''].filter(Boolean);
+  return {
+    tex: `\\begin{array}{l}${rows.join('\\\\[4pt]')}\\end{array}`,
+    note: reflections.length === 0 ? '' :
+      `${reflections.join(' and ')} ${reflections.length === 1 ? 'carries' : 'carry'} a reflection (det = -1).`,
+  };
+}
+
 export function detNote(m: Mat2): string {
   const d = det(m);
   if (d === 0) {
@@ -102,7 +121,7 @@ function div(cls: string): HTMLDivElement {
 }
 
 export function createReadout(
-  matrixRoot: HTMLElement, detRoot: HTMLElement, eigenRoot: HTMLElement,
+  matrixRoot: HTMLElement, detRoot: HTMLElement, eigenRoot: HTMLElement, svdRoot: HTMLElement,
 ): Readout {
   const matrix = div('tex tex-matrix');
   const classification = document.createElement('p');
@@ -122,6 +141,11 @@ export function createReadout(
   eigenNote.className = 'eigen-note';
   eigenRoot.replaceChildren(kind, eigenBox, eigenNote);
 
+  const svdBox = div('tex tex-svd');
+  const svdNote = document.createElement('p');
+  svdNote.className = 'svd-note';
+  svdRoot.replaceChildren(svdBox, svdNote);
+
   return {
     update(m) {
       katex.render(matrixTex(m), matrix, OPTIONS);
@@ -134,6 +158,10 @@ export function createReadout(
       katex.render(info.tex, eigenBox, OPTIONS);
       eigenNote.textContent = info.note;
       eigenNote.hidden = info.note === '';
+      const decomposition = svdReadout(m);
+      katex.render(decomposition.tex, svdBox, OPTIONS);
+      svdNote.textContent = decomposition.note;
+      svdNote.hidden = decomposition.note === '';
     },
   };
 }
