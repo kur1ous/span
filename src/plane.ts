@@ -50,6 +50,8 @@ export interface OverlayState {
   unitCircle: boolean;
   quarterRules: boolean;
   tickLabels: boolean;
+  eigenvectors: boolean;
+  probe: boolean;
 }
 
 export interface Plane {
@@ -339,6 +341,12 @@ export function createPlane(host: HTMLElement): Plane {
       paperFine.style.visibility = state.quarterRules ? '' : 'hidden';
       circleOverlay.style.visibility = state.unitCircle ? '' : 'hidden';
       ticks.style.visibility = state.tickLabels ? '' : 'hidden';
+      eigenOverlay.style.visibility = state.eigenvectors ? '' : 'hidden';
+      for (const node of [probeOverlay, orbitOverlay, probeNote]) {
+        node.style.visibility = state.probe ? '' : 'hidden';
+      }
+      handles.v.style.display = state.probe ? '' : 'none';
+      handles.v.setAttribute('tabindex', state.probe ? '0' : '-1');
     },
   };
 }

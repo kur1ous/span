@@ -3,8 +3,9 @@ import './style.css';
 import { IDENTITY, fromColumns, type Mat2 } from './math/mat2';
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
-import { createPlane, type OverlayState } from './plane';
+import { createPlane } from './plane';
 import { createReadout } from './readout';
+import { bindModeTabs, modes, overlayLabels } from './modes';
 
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
@@ -16,16 +17,33 @@ const readout = createReadout(
   document.getElementById('svd-readout')!,
 );
 
-const overlays: OverlayState = { unitSquare: true, unitCircle: false, quarterRules: true, tickLabels: true };
-for (const key of Object.keys(overlays) as (keyof OverlayState)[]) {
-  const checkbox = document.getElementById(`overlay-${key}`) as HTMLInputElement;
-  checkbox.checked = overlays[key];
-  checkbox.addEventListener('change', () => {
-    overlays[key] = checkbox.checked;
+const modeOverlays = modes.map((mode) => ({ ...mode.overlays }));
+bindModeTabs(
+  modes.map((mode) => document.getElementById(`mode-${mode.id}`) as HTMLButtonElement),
+  document.getElementById('mode-panel')!,
+  (mode) => {
+    for (const cell of ['matrix', 'det', 'eigen', 'svd']) {
+      document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
+    }
+    const overlays = modeOverlays[modes.indexOf(mode)]!;
+    const strip = document.getElementById('overlay-strip')!;
+    strip.replaceChildren();
+    for (const key of mode.controls) {
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = `overlay-${key}`;
+      checkbox.checked = overlays[key];
+      checkbox.addEventListener('change', () => {
+        overlays[key] = checkbox.checked;
+        plane.setOverlays(overlays);
+      });
+      label.append(checkbox, ` ${overlayLabels[key]}`);
+      strip.append(label);
+    }
     plane.setOverlays(overlays);
-  });
-}
-plane.setOverlays(overlays);
+  },
+);
 
 let matrix: Mat2 = IDENTITY;
 let stop = () => {};
