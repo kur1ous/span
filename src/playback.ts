@@ -1,10 +1,11 @@
 import { easeInOutCubic } from './anim';
 import { svd, type Mat2 } from './math/mat2';
 import { stageMatrix } from './math/stages';
+import type { DecompositionStage } from './plane';
 
 export function bindPlayback(
   button: HTMLButtonElement, slider: HTMLInputElement, captions: readonly HTMLElement[],
-  render: (matrix: Mat2) => void,
+  render: (matrix: Mat2, stage: DecompositionStage) => void,
 ) {
   let factors: ReturnType<typeof svd>;
   let time = 0;
@@ -23,7 +24,8 @@ export function bindPlayback(
     slider.value = String(time);
     slider.setAttribute('aria-valuetext', `${captions[stage]!.textContent}, stage ${stage + 1} of 3`);
     captions.forEach((caption, i) => caption.setAttribute('aria-current', i === stage ? 'step' : 'false'));
-    render(stageMatrix(factors, stage + easeInOutCubic(time - stage)));
+    const easedTime = stage + easeInOutCubic(time - stage);
+    render(stageMatrix(factors, easedTime), { factors, time: easedTime });
   }
 
   button.addEventListener('click', () => {

@@ -211,6 +211,14 @@ body::before {
 }
 .singular-minor .singular-label { transform: translate(var(--s-2), var(--s-5)); }
 
+.singular-0 { color: var(--i-hat); }
+.singular-1 { color: var(--j-hat); }
+.singular-vector .shaft { stroke: currentColor; }
+.singular-vector polygon, .singular-vector text { fill: currentColor; }
+.singular-v .shaft { stroke-dasharray: var(--circle-dash); }
+.singular-v .vec-label { transform: translateY(calc(-1 * var(--s-3))); }
+.singular-u .vec-label { transform: translateY(var(--s-3)); }
+
 .orbit-overlay { pointer-events: none; }
 .orbit-line {
   fill: none;

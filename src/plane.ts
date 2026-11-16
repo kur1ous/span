@@ -8,7 +8,7 @@
   gives focus, arrow-key handling and screen-reader labels for free.
 */
 
-import { apply, columns, type Mat2, type Vec2 } from './math/mat2';
+import { apply, columns, type Mat2, type Svd, type Vec2 } from './math/mat2';
 import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
 import type { Which } from './edit';
@@ -61,8 +61,13 @@ export interface Plane {
   probe(): Vec2;
   setProbe(v: Vec2): void;
   view(): View;
-  render(m: Mat2): void;
+  render(m: Mat2, stage?: DecompositionStage): void;
   setOverlays(state: Readonly<OverlayState>): void;
+}
+
+export interface DecompositionStage {
+  factors: Svd;
+  time: number;
 }
 
 function makeHandle(which: Which | 'v', parent: Element): SVGGElement {
@@ -104,6 +109,19 @@ export function createPlane(host: HTMLElement): Plane {
   const unitCircle = el('circle', 'unit-circle', circleOverlay);
   const circleImage = el('polygon', 'circle-image', circleOverlay);
   const singularOverlay = el('g', 'singular-overlay', circleOverlay);
+  const decompositionOverlay = el('g', 'decomposition-overlay', circleOverlay, {
+    role: 'group', 'aria-label': 'Unit singular vectors: dashed v on the source, solid u on the image',
+  });
+  const singularVectors = ['v', 'u'].flatMap((kind) => [0, 1].map((index) => {
+    const group = el('g', `singular-vector singular-${kind} singular-${index}`, decompositionOverlay);
+    const shaft = el('line', 'shaft', group);
+    const head = el('polygon', undefined, group);
+    const label = el('text', 'vec-label', group);
+    label.textContent = `${kind}${index === 0 ? '₁' : '₂'}`;
+    el('title', undefined, group).textContent =
+      `${kind === 'v' ? 'Right' : 'Left'} unit singular vector ${index + 1}`;
+    return { group, shaft, head, label, kind, index };
+  }));
   const arc = el('path', 'orient-arc', svg);
   const arcHead = el('polygon', 'orient-head', svg);
   const detLabel = el('text', 'det-label', svg);
@@ -141,6 +159,7 @@ export function createPlane(host: HTMLElement): Plane {
 
   let view = makeView(host.clientWidth || 1, host.clientHeight || 1);
   let current: Mat2 = { a: 1, b: 0, c: 0, d: 1 };
+  let decomposition: DecompositionStage | undefined;
   let probe: Vec2 = [2, 1.5];
 
   /** Everything that depends only on the frame size: the static paper. */
@@ -197,6 +216,19 @@ export function createPlane(host: HTMLElement): Plane {
     unitCircle.setAttribute('cy', f(o[1]));
     unitCircle.setAttribute('r', f(view.scale));
     circleImage.setAttribute('points', pts(unitCircleImage(m, view)));
+    decompositionOverlay.style.display = decomposition ? '' : 'none';
+    singularOverlay.style.display = decomposition ? 'none' : '';
+    vecs.style.display = decomposition ? 'none' : '';
+    if (decomposition) {
+      const { factors, time } = decomposition;
+      for (const { group, shaft, head, label, kind, index } of singularVectors) {
+        const opacity = Math.max(0, Math.min(1, time - (kind === 'v' ? 0 : 2)));
+        group.style.opacity = String(opacity);
+        group.setAttribute('aria-hidden', String(opacity === 0));
+        const vector = columns(kind === 'v' ? factors.v : factors.u)[index]!;
+        drawArrow(shaft, head, label, toScreen(view, vector));
+      }
+    }
     singularOverlay.replaceChildren();
     singularAxes(m, view).forEach(({ segment, value }, i) => {
       const group = el('g', i === 0 ? 'singular-major' : 'singular-minor', singularOverlay);
@@ -329,8 +361,9 @@ export function createPlane(host: HTMLElement): Plane {
       drawProbe(current);
     },
     view: () => view,
-    render(m) {
+    render(m, stage) {
       current = m;
+      decomposition = stage;
       draw();
     },
     setOverlays(state) {

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { bindPlayback } from './playback';
-import { IDENTITY, diag, rotation } from './math/mat2';
+import { IDENTITY, diag, rotation, svd } from './math/mat2';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -35,17 +35,17 @@ function setup(target = diag(3, 2)) {
 
 it('scrubs exact boundaries and eases within each stage', () => {
   const h = setup();
-  expect(h.render).toHaveBeenLastCalledWith(IDENTITY);
+  expect(h.render).toHaveBeenLastCalledWith(IDENTITY, expect.any(Object));
   h.scrub(1);
-  expect(h.render).toHaveBeenLastCalledWith({ a: 1, b: expect.closeTo(0), c: 0, d: 1 });
+  expect(h.render).toHaveBeenLastCalledWith({ a: 1, b: expect.closeTo(0), c: 0, d: 1 }, expect.any(Object));
   h.scrub(1.25);
-  expect(h.render).toHaveBeenLastCalledWith(diag(1.125, 1.0625));
+  expect(h.render).toHaveBeenLastCalledWith(diag(1.125, 1.0625), expect.any(Object));
   expect(h.captions[1]!.setAttribute).toHaveBeenLastCalledWith('aria-current', 'step');
   expect(h.slider.setAttribute).toHaveBeenLastCalledWith('aria-valuetext', 'Scale (Σ), stage 2 of 3');
   h.scrub(2);
-  expect(h.render).toHaveBeenLastCalledWith(diag(3, 2));
+  expect(h.render).toHaveBeenLastCalledWith(diag(3, 2), expect.any(Object));
   h.scrub(3);
-  expect(h.render).toHaveBeenLastCalledWith(diag(3, 2));
+  expect(h.render).toHaveBeenLastCalledWith(diag(3, 2), expect.any(Object));
   expect(h.captions[2]!.setAttribute).toHaveBeenLastCalledWith('aria-current', 'step');
 });
 
@@ -67,7 +67,7 @@ it('pauses, resumes, completes and replays without overlapping frames', () => {
   expect(h.button.textContent).toBe('Play');
   expect(h.frames.size).toBe(0);
   h.click();
-  expect(h.render).toHaveBeenLastCalledWith(IDENTITY);
+  expect(h.render).toHaveBeenLastCalledWith(IDENTITY, expect.any(Object));
   expect(h.frames.size).toBe(1);
   h.playback.pause(); h.tick(5000);
   expect(h.slider.value).toBe('0');
@@ -84,5 +84,14 @@ it('resets a running timeline and uses the replacement target', () => {
   h.scrub(3);
   for (const key of ['a', 'b', 'c', 'd'] as const) {
     expect(h.render.mock.lastCall![0][key]).toBeCloseTo(target[key]);
+  }
+});
+
+it('passes target factors and eased time through forward and backward scrubbing', () => {
+  const target = { a: 1, b: 2, c: 0, d: -1 };
+  const h = setup(target);
+  for (const [raw, eased] of [[0, 0], [0.25, 0.0625], [2.75, 2.9375], [3, 3], [1, 1]]) {
+    h.scrub(raw!);
+    expect(h.render.mock.lastCall![1]).toEqual({ factors: svd(target), time: eased });
   }
 });

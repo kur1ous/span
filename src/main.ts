@@ -25,7 +25,7 @@ const playback = bindPlayback(
   document.getElementById('play-pause') as HTMLButtonElement,
   document.getElementById('stage-time') as HTMLInputElement,
   [...document.querySelectorAll<HTMLElement>('.stage-captions li')],
-  (m) => plane.render(m),
+  (m, stage) => plane.render(m, stage),
 );
 const modeOverlays = modes.map((mode) => ({ ...mode.overlays }));
 bindModeTabs(
