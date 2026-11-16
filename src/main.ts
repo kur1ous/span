@@ -6,6 +6,7 @@ import { bindHandles } from './interact';
 import { createPlane } from './plane';
 import { createReadout } from './readout';
 import { bindModeTabs, modes, overlayLabels } from './modes';
+import { bindPlayback } from './playback';
 
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
@@ -17,11 +18,31 @@ const readout = createReadout(
   document.getElementById('svd-readout')!,
 );
 
+let matrix: Mat2 = IDENTITY;
+let stop = () => {};
+let decomposing = false;
+const playback = bindPlayback(
+  document.getElementById('play-pause') as HTMLButtonElement,
+  document.getElementById('stage-time') as HTMLInputElement,
+  [...document.querySelectorAll<HTMLElement>('.stage-captions li')],
+  (m) => plane.render(m),
+);
 const modeOverlays = modes.map((mode) => ({ ...mode.overlays }));
 bindModeTabs(
   modes.map((mode) => document.getElementById(`mode-${mode.id}`) as HTMLButtonElement),
   document.getElementById('mode-panel')!,
   (mode) => {
+    if (decomposing && mode.id === 'decompose') return;
+    stop();
+    playback.pause();
+    decomposing = mode.id === 'decompose';
+    document.getElementById('playback-cell')!.hidden = !decomposing;
+    for (const which of ['i', 'j'] as const) {
+      plane.handles[which].style.display = decomposing ? 'none' : '';
+      plane.handles[which].setAttribute('tabindex', decomposing ? '-1' : '0');
+    }
+    if (decomposing) playback.reset(matrix);
+    else plane.render(matrix);
     for (const cell of ['matrix', 'det', 'eigen', 'svd']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
@@ -45,12 +66,10 @@ bindModeTabs(
   },
 );
 
-let matrix: Mat2 = IDENTITY;
-let stop = () => {};
-
 function setMatrix(m: Mat2) {
   matrix = m;
-  plane.render(m);
+  if (decomposing) playback.reset(m);
+  else plane.render(m);
   readout.update(m);
 }
 
@@ -60,7 +79,10 @@ function glideTo(target: Mat2) {
 }
 
 bindHandles(plane, () => matrix, setMatrix, () => stop());
-document.getElementById('reset')!.addEventListener('click', () => glideTo(IDENTITY));
+document.getElementById('reset')!.addEventListener('click', () => {
+  if (decomposing) setMatrix(IDENTITY);
+  else glideTo(IDENTITY);
+});
 
 // open on the identity and ease into the starting shape so the first thing
 // you see is the plane moving

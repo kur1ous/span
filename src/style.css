@@ -468,6 +468,23 @@ body::before {
   gap: var(--s-2) var(--s-3);
 }
 
+#stage-time { width: 100%; margin: var(--s-2) 0; accent-color: var(--ink); }
+#stage-time:focus-visible { outline: var(--w-rule) solid var(--ink); outline-offset: var(--s-1); }
+.stage-captions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-soft);
+}
+.stage-captions [aria-current='step'] {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom: var(--w-rule) solid var(--ink);
+}
+
 .overlay-strip label {
   display: inline-flex;
   align-items: center;
