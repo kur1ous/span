@@ -15,7 +15,7 @@ interface Mode {
 
 export const modes: readonly Mode[] = [
   {
-    id: 'explore', cells: ['matrix', 'det', 'eigen'],
+    id: 'explore', cells: ['matrix', 'presets', 'det', 'eigen'],
     controls: ['unitSquare', 'unitCircle', 'quarterRules', 'tickLabels', 'eigenvectors', 'probe'],
     overlays: { unitSquare: true, unitCircle: false, quarterRules: true, tickLabels: true,
       eigenvectors: true, probe: true },

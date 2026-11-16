@@ -465,6 +465,12 @@ body::before {
   gap: var(--s-2);
 }
 
+.preset-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
 .mode-tabs [aria-selected='true'] {
   background: var(--ink);
   color: var(--paper);

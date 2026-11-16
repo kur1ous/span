@@ -1,6 +1,6 @@
 import 'katex/dist/katex.min.css';
 import './style.css';
-import { IDENTITY, fromColumns, type Mat2 } from './math/mat2';
+import { IDENTITY, diag, fromColumns, rotation, type Mat2 } from './math/mat2';
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
 import { createPlane } from './plane';
@@ -43,7 +43,7 @@ bindModeTabs(
     }
     if (decomposing) playback.reset(matrix);
     else plane.render(matrix);
-    for (const cell of ['matrix', 'det', 'eigen', 'svd']) {
+    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
@@ -76,6 +76,23 @@ function setMatrix(m: Mat2) {
 function glideTo(target: Mat2) {
   stop();
   stop = tweenMatrix(matrix, target, 560, setMatrix);
+}
+
+const presets: readonly [string, Mat2][] = [
+  ['Identity', IDENTITY],
+  ['Rotate 30°', rotation(Math.PI / 6)],
+  ['Shear x by 1', { a: 1, b: 1, c: 0, d: 1 }],
+  ['Project onto x axis', diag(1, 0)],
+  ['Reflect across y = x', { a: 0, b: 1, c: 1, d: 0 }],
+  ['Uniform scale ×2', diag(2, 2)],
+];
+for (const [label, target] of presets) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn';
+  button.textContent = label;
+  button.addEventListener('click', () => glideTo(target));
+  document.getElementById('preset-gallery')!.append(button);
 }
 
 bindHandles(plane, () => matrix, setMatrix, () => stop());
