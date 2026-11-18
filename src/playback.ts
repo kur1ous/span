@@ -21,8 +21,10 @@ export function bindPlayback(
   function seek(value: number) {
     time = value;
     const stage = Math.min(2, Math.floor(time));
+    const percent = Math.round((time - stage) * 100);
     slider.value = String(time);
-    slider.setAttribute('aria-valuetext', `${captions[stage]!.textContent}, stage ${stage + 1} of 3`);
+    slider.setAttribute('aria-valuetext',
+      `${captions[stage]!.textContent}, stage ${stage + 1} of 3, ${percent}% through stage`);
     captions.forEach((caption, i) => caption.setAttribute('aria-current', i === stage ? 'step' : 'false'));
     const easedTime = stage + easeInOutCubic(time - stage);
     render(stageMatrix(factors, easedTime), { factors, time: easedTime });

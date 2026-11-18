@@ -41,7 +41,7 @@ it('scrubs exact boundaries and eases within each stage', () => {
   h.scrub(1.25);
   expect(h.render).toHaveBeenLastCalledWith(diag(1.125, 1.0625), expect.any(Object));
   expect(h.captions[1]!.setAttribute).toHaveBeenLastCalledWith('aria-current', 'step');
-  expect(h.slider.setAttribute).toHaveBeenLastCalledWith('aria-valuetext', 'Scale (Σ), stage 2 of 3');
+  expect(h.slider.setAttribute).toHaveBeenLastCalledWith('aria-valuetext', 'Scale (Σ), stage 2 of 3, 25% through stage');
   h.scrub(2);
   expect(h.render).toHaveBeenLastCalledWith(diag(3, 2), expect.any(Object));
   h.scrub(3);
@@ -93,5 +93,26 @@ it('passes target factors and eased time through forward and backward scrubbing'
   for (const [raw, eased] of [[0, 0], [0.25, 0.0625], [2.75, 2.9375], [3, 3], [1, 1]]) {
     h.scrub(raw!);
     expect(h.render.mock.lastCall![1]).toEqual({ factors: svd(target), time: eased });
+  }
+});
+
+it('announces progress within each stage while scrubbing in either direction', () => {
+  const h = setup();
+  const cases = [
+    [0, 0, 0],
+    [0.25, 0, 25],
+    [0.99, 0, 99],
+    [1, 1, 0],
+    [1.57, 1, 57],
+    [2, 2, 0],
+    [3, 2, 100],
+    [2.5, 2, 50],
+    [1.25, 1, 25],
+    [0, 0, 0],
+  ] as const;
+  for (const [time, stage, percent] of cases) {
+    h.scrub(time);
+    expect(h.slider.setAttribute).toHaveBeenLastCalledWith('aria-valuetext',
+      `${h.captions[stage]!.textContent}, stage ${stage + 1} of 3, ${percent}% through stage`);
   }
 });
