@@ -224,6 +224,32 @@ describe('eigen: complex', () => {
 });
 
 describe('eigen: bookkeeping', () => {
+  it.each([1e-9, 1e-7, 1, 1e7])('preserves eigenvalue kinds at scale %s', (scale) => {
+    const real = eigen(diag(2 * scale, scale));
+    expect(real.kind).toBe('real');
+    if (real.kind !== 'real') throw new Error('expected real');
+    expect(real.values[0] / scale).toBeCloseTo(2, 12);
+    expect(real.values[1] / scale).toBeCloseTo(1, 12);
+    expectVec(real.vectors[0], [1, 0]);
+    expectVec(real.vectors[1], [0, 1]);
+
+    const turn = m(0, -scale, scale, 0);
+    const complex = eigen(turn);
+    expect(complex.kind).toBe('complex');
+    if (complex.kind !== 'complex') throw new Error('expected complex');
+    expect(complex.re).toBe(0);
+    expect(complex.im / scale).toBeCloseTo(1, 12);
+    expectVec(complex.vRe, [-Math.SQRT1_2, 0]);
+    expectVec(complex.vIm, [0, Math.SQRT1_2]);
+
+    const repeated = eigen(m(2 * scale, scale, -scale, 4 * scale));
+    expect(repeated.kind).toBe('repeated');
+    if (repeated.kind !== 'repeated') throw new Error('expected repeated');
+    expect(repeated.value / scale).toBeCloseTo(3, 12);
+    expect(repeated.defective).toBe(true);
+    expectVec(repeated.vectors[0]!, [Math.SQRT1_2, Math.SQRT1_2]);
+  });
+
   it('eigenvalues sum to the trace and multiply to the determinant', () => {
     for (const a of randomMatrices(100)) {
       const e = eigen(a);

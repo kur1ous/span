@@ -139,7 +139,8 @@ export function eigen(m: Mat2): Eigen {
   const mean = trace(m) / 2;
   const dt = det(m);
   const disc = mean * mean - dt;
-  const tol = EPS * Math.max(1, mean * mean, Math.abs(dt), Math.abs(m.b * m.c));
+  // Keep the tolerance quadratic in the entries, even for tiny transformations.
+  const tol = EPS * Math.max(mean * mean, Math.abs(dt), Math.abs(m.b * m.c));
 
   if (disc > tol) {
     const root = Math.sqrt(disc);

@@ -45,4 +45,14 @@ describe('nearEigendirection', () => {
     expect(nearEigendirection(rotation(Math.PI / 2), [1, 0])).toBe(false);
     expect(nearEigendirection(rotation(Math.PI / 180), [1, 0])).toBe(false);
   });
+
+  it('keeps probe highlighting correct for small transformations', () => {
+    const turn = { a: 0, b: -1e-7, c: 1e-7, d: 0 };
+    expect(nearEigendirection(turn, [1, 0])).toBe(false);
+    expect(nearEigendirection(turn, [0, 1])).toBe(false);
+    const stretch = diag(2e-7, 1e-7);
+    expect(nearEigendirection(stretch, [1, 0])).toBe(true);
+    expect(nearEigendirection(stretch, [0, 1])).toBe(true);
+    expect(nearEigendirection(stretch, [1, 1])).toBe(false);
+  });
 });
