@@ -7,6 +7,7 @@ import { createPlane } from './plane';
 import { createReadout, renderComposition } from './readout';
 import { bindModeTabs, modes, overlayLabels, type ModeId } from './modes';
 import { bindComposition } from './composition';
+import { bindInverse } from './inverse';
 import { bindPlayback } from './playback';
 import { bindMatrixInputs } from './matrix-inputs';
 import { bindUrlState } from './url-state';
@@ -49,6 +50,12 @@ const composition = bindComposition(
   document.getElementById('composition-caption')!,
   (m) => plane.render(m),
 );
+const inverseMode = bindInverse(
+  document.getElementById('inverse-apply') as HTMLButtonElement,
+  document.getElementById('inverse-readout')!,
+  document.getElementById('inverse-caption')!,
+  (m) => plane.render(m), () => stop(),
+);
 function resetComposition() {
   plane.setComposition(matrix, matrixB);
   renderComposition(document.getElementById('composition-readout')!, matrix, matrixB);
@@ -65,18 +72,21 @@ const selectMode = bindModeTabs(
     stop();
     playback.pause();
     composition.pause();
+    inverseMode.pause();
     activeMode = mode.id;
     plane.setComposition();
     decomposing = mode.id === 'decompose';
     document.getElementById('playback-cell')!.hidden = !decomposing;
     for (const which of ['i', 'j'] as const) {
-      plane.handles[which].style.display = decomposing ? 'none' : '';
-      plane.handles[which].setAttribute('tabindex', decomposing ? '-1' : '0');
+      const hidden = decomposing || activeMode === 'inverse';
+      plane.handles[which].style.display = hidden ? 'none' : '';
+      plane.handles[which].setAttribute('tabindex', hidden ? '-1' : '0');
     }
     if (decomposing) playback.reset(matrix);
     else if (activeMode === 'compose') resetComposition();
+    else if (activeMode === 'inverse') inverseMode.reset(matrix);
     else plane.render(matrix);
-    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition']) {
+    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition', 'inverse']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
@@ -104,6 +114,7 @@ function setMatrix(m: Mat2) {
   matrix = m;
   if (decomposing) playback.reset(m);
   else if (activeMode === 'compose') resetComposition();
+  else if (activeMode === 'inverse') inverseMode.reset(m);
   else plane.render(m);
   readout.update(m);
   matrixInputs.update(m);

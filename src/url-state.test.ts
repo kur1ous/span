@@ -8,7 +8,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it.each(['explore', 'decompose', 'compose'] as const)('round trips matrix entries and %s mode', (mode) => {
+it.each(['explore', 'decompose', 'compose', 'inverse'] as const)('round trips matrix entries and %s mode', (mode) => {
   const original = { matrix: { a: Math.PI, b: -1e-10, c: 1e21, d: 0 }, mode };
   expect(decodeState(encodeState(original))).toEqual(original);
 });

@@ -480,6 +480,7 @@ body::before {
 
 .mode-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--s-2);
 }
 
