@@ -9,6 +9,7 @@ import { bindModeTabs, modes, overlayLabels } from './modes';
 import { bindPlayback } from './playback';
 import { bindMatrixInputs } from './matrix-inputs';
 import { bindUrlState } from './url-state';
+import { createKeyBurst, createMatrixHistory } from './history';
 
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
@@ -24,12 +25,13 @@ let matrix: Mat2 = IDENTITY;
 let stop = () => {};
 let decomposing = false;
 let syncUrl = () => {};
+const history = createMatrixHistory();
 const matrixInputs = bindMatrixInputs({
   a: document.getElementById('matrix-a') as HTMLInputElement,
   b: document.getElementById('matrix-b') as HTMLInputElement,
   c: document.getElementById('matrix-c') as HTMLInputElement,
   d: document.getElementById('matrix-d') as HTMLInputElement,
-}, document.getElementById('matrix-error')!, () => matrix, setMatrix, () => stop());
+}, document.getElementById('matrix-error')!, () => matrix, editMatrix, () => stop());
 const playback = bindPlayback(
   document.getElementById('play-pause') as HTMLButtonElement,
   document.getElementById('stage-time') as HTMLInputElement,
@@ -85,9 +87,15 @@ function setMatrix(m: Mat2) {
   syncUrl();
 }
 
-function glideTo(target: Mat2) {
+function editMatrix(m: Mat2, group?: object) {
+  history.record(matrix, m, group);
+  setMatrix(m);
+}
+
+function glideTo(target: Mat2, record = true) {
   stop();
-  stop = tweenMatrix(matrix, target, 560, setMatrix);
+  const group = {};
+  stop = tweenMatrix(matrix, target, 560, (m) => record ? editMatrix(m, group) : setMatrix(m));
 }
 
 const presets: readonly [string, Mat2][] = [
@@ -119,17 +127,51 @@ for (const [sliderId, outputId, toMatrix, format] of parametricPresets) {
     slider.setAttribute('aria-valuetext', output.value);
   };
   updateValue();
+  let dragGroup: object | undefined;
+  let dragPointer: number | undefined;
+  let keyGroup: object | undefined;
+  let keyBurst = createKeyBurst();
+  slider.addEventListener('pointerdown', (event) => {
+    if (event.button === 0 && dragPointer === undefined) {
+      dragPointer = event.pointerId;
+      dragGroup = {};
+    }
+  });
+  for (const event of ['pointerup', 'pointercancel'] as const) {
+    window.addEventListener(event, (event) => {
+      if (event.pointerId === dragPointer) { dragPointer = undefined; dragGroup = undefined; }
+    });
+  }
+  slider.addEventListener('keydown', (event) => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) {
+      keyGroup = keyBurst(undefined, event.repeat);
+    }
+  });
+  slider.addEventListener('keyup', () => { keyGroup = undefined; });
+  slider.addEventListener('blur', () => {
+    dragPointer = undefined; dragGroup = keyGroup = undefined; keyBurst = createKeyBurst();
+  });
   slider.addEventListener('input', () => {
     stop();
     updateValue();
-    setMatrix(toMatrix(slider.valueAsNumber));
+    editMatrix(toMatrix(slider.valueAsNumber), dragGroup ?? keyGroup ?? keyBurst());
   });
 }
 
-bindHandles(plane, () => matrix, setMatrix, () => stop());
+bindHandles(plane, () => matrix, editMatrix, () => stop());
 document.getElementById('reset')!.addEventListener('click', () => {
-  if (decomposing) setMatrix(IDENTITY);
+  if (decomposing) editMatrix(IDENTITY);
   else glideTo(IDENTITY);
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.defaultPrevented || event.isComposing || event.altKey ||
+      !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z' ||
+      matrixInputs.isEditing(event.target)) return;
+  event.preventDefault();
+  stop();
+  const previous = event.shiftKey ? history.redo(matrix) : history.undo(matrix);
+  if (previous) setMatrix(previous);
 });
 
 const urlState = bindUrlState(
@@ -137,6 +179,7 @@ const urlState = bindUrlState(
   (state) => {
     stop();
     playback.pause();
+    history.clear();
     setMatrix(state.matrix);
     selectMode(state.mode);
   },
@@ -145,5 +188,5 @@ syncUrl = urlState.update;
 if (!urlState.restored) {
   // Open on the identity and ease into the starting shape.
   setMatrix(IDENTITY);
-  glideTo(START);
+  glideTo(START, false);
 }

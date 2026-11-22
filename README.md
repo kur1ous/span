@@ -26,6 +26,8 @@ pnpm dev
 - Drag the red ring (the image of î) or the blue ring (the image of ĵ). Tips
   snap to half-integers when you get close; hold Alt to move freely.
 - Tab to a ring and use the arrow keys: 0.1 per press, 1.0 with Shift.
+- Ctrl+Z undoes a matrix edit; Ctrl+Shift+Z redoes it (Cmd on macOS).
+  A whole drag or quick burst of arrow presses counts as one edit.
 - Reset glides back to the identity.
 - A hatched region means the determinant is negative: the plane has been
   mirrored, and the arc from î to ĵ runs clockwise.

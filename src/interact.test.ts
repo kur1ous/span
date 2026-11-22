@@ -3,6 +3,7 @@ import { bindHandles } from './interact';
 import { IDENTITY, type Mat2, type Vec2 } from './math/mat2';
 import type { Plane } from './plane';
 import { makeView } from './view';
+import { createMatrixHistory } from './history';
 
 function setup(which: 'i' | 'v' = 'i') {
   const classes = new Set<string>();
@@ -23,7 +24,8 @@ function setup(which: 'i' | 'v' = 'i') {
     view: () => makeView(550, 550),
   } as unknown as Plane;
   let matrix = IDENTITY;
-  const set = vi.fn((m: Mat2) => { matrix = m; });
+  const history = createMatrixHistory();
+  const set = vi.fn((m: Mat2, group?: object) => { history.record(matrix, m, group); matrix = m; });
   const grab = vi.fn();
   bindHandles(plane, () => matrix, set, grab);
   const pointer = (type: string, pointerId: number, clientX = 325, button = 0) => {
@@ -31,7 +33,7 @@ function setup(which: 'i' | 'v' = 'i') {
       pointerId, clientX, clientY: 275, altKey: true, button,
     }));
   };
-  return { pointer, set, grab, classes, captures, handle, probe: () => probe, matrix: () => matrix };
+  return { pointer, set, grab, classes, captures, handle, history, probe: () => probe, matrix: () => matrix };
 }
 
 describe('probe controls', () => {
@@ -64,6 +66,41 @@ describe('probe controls', () => {
 });
 
 describe('handle pointer ownership', () => {
+  it('keeps a held arrow key in one undo entry across the initial repeat delay', () => {
+    const h = setup();
+    const now = vi.spyOn(performance, 'now');
+    try {
+      const key = (repeat: boolean) => h.handle.dispatchEvent(Object.assign(new Event('keydown'), {
+        key: 'ArrowRight', repeat,
+      }));
+      now.mockReturnValue(0);
+      key(false);
+      now.mockReturnValue(1000);
+      key(true);
+      expect(h.matrix().a).toBe(1.2);
+      expect(h.history.undo(h.matrix())).toEqual(IDENTITY);
+      expect(h.history.undo(IDENTITY)).toBeUndefined();
+    } finally { now.mockRestore(); }
+  });
+
+  it('records one undo entry per drag even after a long pause', () => {
+    const h = setup();
+    const now = vi.spyOn(performance, 'now');
+    try {
+      now.mockReturnValue(0);
+      h.pointer('pointerdown', 1);
+      h.pointer('pointermove', 1, 375);
+      now.mockReturnValue(10_000);
+      h.pointer('pointermove', 1, 425);
+      h.pointer('pointerup', 1);
+      h.pointer('pointerdown', 2, 425);
+      h.pointer('pointermove', 2, 475);
+      expect(h.history.undo(h.matrix())).toEqual({ a: 3, b: 0, c: 0, d: 1 });
+      expect(h.history.undo({ a: 3, b: 0, c: 0, d: 1 })).toEqual(IDENTITY);
+      expect(h.history.undo(IDENTITY)).toBeUndefined();
+    } finally { now.mockRestore(); }
+  });
+
   it.each([1, 2])('ignores button %i without interrupting animation or moving the handle', (button) => {
     const h = setup();
     expect(h.pointer('pointerdown', 1, 325, button)).toBe(true);

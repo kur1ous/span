@@ -2,6 +2,7 @@ import { clampTo, getColumn, nudge, snap, withColumn } from './edit';
 import type { Mat2, Vec2 } from './math/mat2';
 import type { Plane } from './plane';
 import { toWorld, worldBounds } from './view';
+import { createKeyBurst } from './history';
 
 const STEP = 0.1;
 const COARSE_STEP = 1;
@@ -22,7 +23,7 @@ const ARROWS: Record<string, Vec2> = {
 export function bindHandles(
   plane: Plane,
   get: () => Mat2,
-  set: (m: Mat2) => void,
+  set: (m: Mat2, group?: object) => void,
   onGrab: () => void,
 ): void {
   const limit = (): Vec2 => {
@@ -33,9 +34,12 @@ export function bindHandles(
   for (const which of ['i', 'j', 'v'] as const) {
     const handle = plane.handles[which];
     const tipValue = () => which === 'v' ? plane.probe() : getColumn(get(), which);
-    const move = (v: Vec2) => which === 'v' ? plane.setProbe(v) : set(withColumn(get(), which, v));
+    const move = (v: Vec2, group: object) => which === 'v' ? plane.setProbe(v) : set(withColumn(get(), which, v), group);
     let offset: Vec2 | null = null;
     let pointerId: number | null = null;
+    let dragGroup = {};
+    let keyBurst = createKeyBurst();
+    handle.addEventListener('blur', () => { keyBurst = createKeyBurst(); });
 
     const pointerWorld = (e: PointerEvent): Vec2 => {
       const r = plane.svg.getBoundingClientRect();
@@ -45,6 +49,7 @@ export function bindHandles(
     handle.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 || pointerId !== null) return;
       onGrab();
+      dragGroup = {};
       handle.setPointerCapture(e.pointerId);
       pointerId = e.pointerId;
       handle.focus();
@@ -61,7 +66,7 @@ export function bindHandles(
       const p = pointerWorld(e);
       let v: Vec2 = [p[0] + offset[0], p[1] + offset[1]];
       if (!e.altKey) v = snap(v);
-      move(clampTo(v, limit()));
+      move(clampTo(v, limit()), dragGroup);
     });
 
     const release = (e: PointerEvent) => {
@@ -82,7 +87,7 @@ export function bindHandles(
       onGrab();
       const step = e.shiftKey ? COARSE_STEP : STEP;
       const next = nudge(tipValue(), dir[0] * step, dir[1] * step);
-      move(clampTo(next, limit()));
+      move(clampTo(next, limit()), keyBurst(undefined, e.repeat));
     });
   }
 }

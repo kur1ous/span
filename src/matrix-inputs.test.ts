@@ -78,8 +78,11 @@ it('syncs external changes without rounding and discards stale invalid edits', (
 it('waits until text composition has ended before accepting Enter', () => {
   const h = setup();
   h.type('c', '-2');
+  expect(h.editor.isEditing(h.inputs.c)).toBe(true);
+  expect(h.editor.isEditing(h.inputs.a)).toBe(false);
   h.enter('c', true);
   expect(h.set).not.toHaveBeenCalled();
   h.enter('c');
   expect(h.matrix().c).toBe(-2);
+  expect(h.editor.isEditing(h.inputs.c)).toBe(false);
 });

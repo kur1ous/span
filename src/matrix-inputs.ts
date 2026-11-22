@@ -36,6 +36,7 @@ export function bindMatrixInputs(
     });
   }
   return {
+    isEditing: (target: EventTarget | null) => keys.some((key) => inputs[key] === target && dirty.has(key)),
     update(m: Mat2) {
       dirty.clear();
       invalid.clear();
