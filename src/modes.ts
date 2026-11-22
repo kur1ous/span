@@ -7,11 +7,13 @@ export const overlayLabels = {
 } satisfies Record<keyof OverlayState, string>;
 
 interface Mode {
-  id: string;
+  id: 'explore' | 'decompose';
   cells: readonly string[];
   controls: readonly (keyof OverlayState)[];
   overlays: OverlayState;
 }
+
+export type ModeId = Mode['id'];
 
 export const modes: readonly Mode[] = [
   {
@@ -53,4 +55,5 @@ export function bindModeTabs(
     });
   });
   activate(0);
+  return (id: ModeId) => activate(modes.findIndex((mode) => mode.id === id));
 }

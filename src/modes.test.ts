@@ -7,7 +7,7 @@ function setup() {
   }));
   const panel = { setAttribute: vi.fn() };
   const select = vi.fn();
-  bindModeTabs(tabs as unknown as HTMLButtonElement[], panel as unknown as HTMLElement, select);
+  const activate = bindModeTabs(tabs as unknown as HTMLButtonElement[], panel as unknown as HTMLElement, select);
   const key = (index: number, key: string) => tabs[index]!.dispatchEvent(
     Object.assign(new Event('keydown', { cancelable: true }), { key }),
   );
@@ -19,10 +19,19 @@ function setup() {
     expect(panel.setAttribute).toHaveBeenLastCalledWith('aria-labelledby', tabs[index]!.id);
     expect(select.mock.lastCall![0].id).toBe(index === 0 ? 'explore' : 'decompose');
   }
-  return { tabs, select, key, selected };
+  return { tabs, select, key, selected, activate };
 }
 
 describe('mode tabs', () => {
+  it('restores a mode programmatically without moving keyboard focus', () => {
+    const h = setup();
+    h.activate('decompose');
+    h.selected(1);
+    h.activate('explore');
+    h.selected(0);
+    h.tabs.forEach((tab) => expect(tab.focus).not.toHaveBeenCalled());
+  });
+
   it('starts in Explore without stealing focus and selects Decompose on click', () => {
     const h = setup();
     h.selected(0);

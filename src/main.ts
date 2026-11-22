@@ -8,6 +8,7 @@ import { createReadout } from './readout';
 import { bindModeTabs, modes, overlayLabels } from './modes';
 import { bindPlayback } from './playback';
 import { bindMatrixInputs } from './matrix-inputs';
+import { bindUrlState } from './url-state';
 
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
@@ -22,6 +23,7 @@ const readout = createReadout(
 let matrix: Mat2 = IDENTITY;
 let stop = () => {};
 let decomposing = false;
+let syncUrl = () => {};
 const matrixInputs = bindMatrixInputs({
   a: document.getElementById('matrix-a') as HTMLInputElement,
   b: document.getElementById('matrix-b') as HTMLInputElement,
@@ -35,7 +37,7 @@ const playback = bindPlayback(
   (m, stage) => plane.render(m, stage),
 );
 const modeOverlays = modes.map((mode) => ({ ...mode.overlays }));
-bindModeTabs(
+const selectMode = bindModeTabs(
   modes.map((mode) => document.getElementById(`mode-${mode.id}`) as HTMLButtonElement),
   document.getElementById('mode-panel')!,
   (mode) => {
@@ -70,6 +72,7 @@ bindModeTabs(
       strip.append(label);
     }
     plane.setOverlays(overlays);
+    syncUrl();
   },
 );
 
@@ -79,6 +82,7 @@ function setMatrix(m: Mat2) {
   else plane.render(m);
   readout.update(m);
   matrixInputs.update(m);
+  syncUrl();
 }
 
 function glideTo(target: Mat2) {
@@ -128,7 +132,18 @@ document.getElementById('reset')!.addEventListener('click', () => {
   else glideTo(IDENTITY);
 });
 
-// open on the identity and ease into the starting shape so the first thing
-// you see is the plane moving
-setMatrix(IDENTITY);
-glideTo(START);
+const urlState = bindUrlState(
+  () => ({ matrix, mode: decomposing ? 'decompose' : 'explore' }),
+  (state) => {
+    stop();
+    playback.pause();
+    setMatrix(state.matrix);
+    selectMode(state.mode);
+  },
+);
+syncUrl = urlState.update;
+if (!urlState.restored) {
+  // Open on the identity and ease into the starting shape.
+  setMatrix(IDENTITY);
+  glideTo(START);
+}
