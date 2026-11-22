@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { bindModeTabs } from './modes';
+import { bindModeTabs, modes } from './modes';
 
 function setup() {
-  const tabs = ['explore', 'decompose'].map((id) => Object.assign(new EventTarget(), {
+  const tabs = modes.map(({ id }) => Object.assign(new EventTarget(), {
     id: `mode-${id}`, tabIndex: -1, setAttribute: vi.fn(), focus: vi.fn(),
   }));
   const panel = { setAttribute: vi.fn() };
@@ -12,12 +12,12 @@ function setup() {
     Object.assign(new Event('keydown', { cancelable: true }), { key }),
   );
   function selected(index: number) {
-    expect(tabs.map((tab) => tab.tabIndex)).toEqual(index === 0 ? [0, -1] : [-1, 0]);
+    expect(tabs.map((tab) => tab.tabIndex)).toEqual(tabs.map((_, i) => i === index ? 0 : -1));
     tabs.forEach((tab, i) => expect(tab.setAttribute).toHaveBeenLastCalledWith(
       'aria-selected', String(i === index),
     ));
     expect(panel.setAttribute).toHaveBeenLastCalledWith('aria-labelledby', tabs[index]!.id);
-    expect(select.mock.lastCall![0].id).toBe(index === 0 ? 'explore' : 'decompose');
+    expect(select.mock.lastCall![0].id).toBe(modes[index]!.id);
   }
   return { tabs, select, key, selected, activate };
 }
@@ -27,6 +27,8 @@ describe('mode tabs', () => {
     const h = setup();
     h.activate('decompose');
     h.selected(1);
+    h.activate('compose');
+    h.selected(2);
     h.activate('explore');
     h.selected(0);
     h.tabs.forEach((tab) => expect(tab.focus).not.toHaveBeenCalled());
@@ -40,15 +42,20 @@ describe('mode tabs', () => {
     h.selected(1);
     expect(h.select.mock.lastCall![0].cells).toEqual(['matrix', 'svd']);
     expect(h.select.mock.lastCall![0].overlays).toMatchObject({ unitCircle: true, probe: false });
+    h.tabs[2]!.dispatchEvent(new Event('click'));
+    h.selected(2);
+    expect(h.select.mock.lastCall![0].cells).toEqual(['matrix', 'composition']);
+    expect(h.select.mock.lastCall![0].overlays).toMatchObject({ unitSquare: true, probe: false });
     h.tabs[0]!.dispatchEvent(new Event('click'));
     h.selected(0);
     expect(h.select.mock.lastCall![0].cells).toContain('eigen');
   });
 
   it.each([
-    [0, 'ArrowLeft', 1], [1, 'ArrowRight', 0],
+    [0, 'ArrowLeft', 2], [2, 'ArrowRight', 0],
     [0, 'ArrowRight', 1], [1, 'ArrowLeft', 0],
-    [0, 'End', 1], [1, 'Home', 0],
+    [1, 'ArrowRight', 2], [2, 'ArrowLeft', 1],
+    [0, 'End', 2], [2, 'Home', 0],
   ] as const)('moves from tab %i with %s to tab %i', (start, key, end) => {
     const h = setup();
     h.tabs[start]!.dispatchEvent(new Event('click'));

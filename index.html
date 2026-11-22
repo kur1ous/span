@@ -27,6 +27,7 @@
         <div class="cell mode-tabs" role="tablist" aria-label="Mode">
           <button class="btn" id="mode-explore" type="button" role="tab" aria-selected="true" aria-controls="mode-panel">Explore</button>
           <button class="btn" id="mode-decompose" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Decompose</button>
+          <button class="btn" id="mode-compose" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Compose</button>
         </div>
 
         <div id="mode-panel" role="tabpanel" aria-labelledby="mode-explore">
@@ -47,6 +48,15 @@
             <p class="matrix-kind" id="matrix-help">Edit an entry, then press Enter or leave the field.</p>
             <p class="matrix-kind" id="matrix-error" aria-live="polite"></p>
             <div class="readout" id="matrix-readout"></div>
+          </section>
+
+          <section class="cell" id="composition-cell" aria-labelledby="composition-label" hidden>
+            <h2 class="label" id="composition-label">Composition · A first, then B</h2>
+            <div class="readout" id="composition-readout"></div>
+            <p class="matrix-kind">Drag Bî and Bĵ to edit B. Arrow keys nudge; Shift takes larger steps. Editing either matrix restarts the steps.</p>
+            <button class="btn" id="composition-back" type="button">Back</button>
+            <button class="btn" id="composition-next" type="button">Next</button>
+            <p class="matrix-kind" id="composition-caption" role="status"></p>
           </section>
 
           <section class="cell" id="presets-cell" aria-labelledby="presets-label">

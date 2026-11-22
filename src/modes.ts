@@ -7,7 +7,7 @@ export const overlayLabels = {
 } satisfies Record<keyof OverlayState, string>;
 
 interface Mode {
-  id: 'explore' | 'decompose';
+  id: 'explore' | 'decompose' | 'compose';
   cells: readonly string[];
   controls: readonly (keyof OverlayState)[];
   overlays: OverlayState;
@@ -26,6 +26,12 @@ export const modes: readonly Mode[] = [
     id: 'decompose', cells: ['matrix', 'svd'],
     controls: ['unitCircle', 'quarterRules', 'tickLabels'],
     overlays: { unitSquare: false, unitCircle: true, quarterRules: true, tickLabels: true,
+      eigenvectors: false, probe: false },
+  },
+  {
+    id: 'compose', cells: ['matrix', 'composition'],
+    controls: ['unitSquare', 'quarterRules', 'tickLabels'],
+    overlays: { unitSquare: true, unitCircle: false, quarterRules: true, tickLabels: true,
       eigenvectors: false, probe: false },
   },
 ];

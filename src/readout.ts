@@ -1,6 +1,6 @@
 import katex from 'katex';
 import { fmt } from './format';
-import { det, diag, eigen, svd, transpose, type Mat2, type Vec2 } from './math/mat2';
+import { det, diag, eigen, mul, svd, transpose, type Mat2, type Vec2 } from './math/mat2';
 import { complexPolar } from './math/orbit';
 import { classify } from './math/classify';
 
@@ -13,6 +13,14 @@ const OPTIONS: katex.KatexOptions = {
 };
 
 const cell = (cls: string, n: number) => `\\htmlClass{${cls} num}{${fmt(n)}}`;
+
+export function renderComposition(root: HTMLElement, a: Mat2, b: Mat2) {
+  const factor = (name: string, m: Mat2, left: string, right: string) =>
+    `${name}=\\begin{bmatrix}${cell(left, m.a)} & ${cell(right, m.b)}\\\\` +
+    `${cell(left, m.c)} & ${cell(right, m.d)}\\end{bmatrix}`;
+  katex.render(`\\begin{array}{l}${factor('B', b, 'col-bi', 'col-bj')}\\\\[6pt]` +
+    `${factor('BA', mul(b, a), '', '')}\\end{array}`, root, OPTIONS);
+}
 
 function columnsTex(m: Mat2): string {
   return (

@@ -25,13 +25,14 @@ export function bindHandles(
   get: () => Mat2,
   set: (m: Mat2, group?: object) => void,
   onGrab: () => void,
+  whichHandles: readonly ('i' | 'j' | 'v')[] = ['i', 'j', 'v'],
 ): void {
   const limit = (): Vec2 => {
     const b = worldBounds(plane.view());
     return [b.max[0] - MARGIN, b.max[1] - MARGIN];
   };
 
-  for (const which of ['i', 'j', 'v'] as const) {
+  for (const which of whichHandles) {
     const handle = plane.handles[which];
     const tipValue = () => which === 'v' ? plane.probe() : getColumn(get(), which);
     const move = (v: Vec2, group: object) => which === 'v' ? plane.setProbe(v) : set(withColumn(get(), which, v), group);

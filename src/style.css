@@ -23,6 +23,8 @@
   --i-hat: #d2412a;
   --j-hat: #1b6ca8;
   --eigen: #b98600;
+  --b-i: #287357;
+  --b-j: #9b4873;
 
   /* determinant region: a wash for positive area, section hatching when negative */
   --det-wash: rgb(21 32 43 / 0.09);
@@ -367,6 +369,12 @@ body::before {
 
 .handle-i .ring { stroke: var(--i-hat); }
 .handle-j .ring { stroke: var(--j-hat); }
+.basis-b-i { --basis-b: var(--b-i); }
+.basis-b-j { --basis-b: var(--b-j); }
+.composition-b .shaft, .composition-b .ring { stroke: var(--basis-b); }
+.composition-b polygon, .composition-b .vec-label { fill: var(--basis-b); }
+.katex .col-bi { color: var(--b-i); }
+.katex .col-bj { color: var(--b-j); }
 
 .probe-overlay { color: var(--ink); pointer-events: none; }
 .probe-overlay.is-aligned { color: var(--eigen); }

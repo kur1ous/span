@@ -1,6 +1,7 @@
 ﻿import { afterEach, expect, it, vi } from 'vitest';
 import { createPlane } from './plane';
-import { IDENTITY, diag, svd, type Svd } from './math/mat2';
+import { IDENTITY, diag, mul, svd, type Svd } from './math/mat2';
+import { toScreen } from './view';
 import { stageMatrix } from './math/stages';
 
 class Node {
@@ -78,4 +79,33 @@ it.each([diag(4, 0), diag(0, 0)])('keeps unit vectors on collapsed images and re
   expect(h.find('decomposition-overlay').style.display).toBe('none');
   expect(h.find('singular-overlay').style.display).toBe('');
   expect(h.find('vectors').style.display).toBe('');
+});
+
+it('keeps editable A and B tips independent of the composition stage and resize', () => {
+  const h = setup();
+  const a = { a: 1, b: 2, c: 0, d: 1 };
+  const b = { a: 2, b: 0, c: 1, d: 1 };
+  h.plane.setComposition(a, b);
+  const checkTips = () => {
+    const tip = (x: number, y: number) => {
+      const p = toScreen(h.plane.view(), [x, y]);
+      return `translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`;
+    };
+    expect(h.plane.handles.i).toHaveProperty('attrs.transform', tip(1, 0));
+    expect(h.plane.bHandles.i).toHaveProperty('attrs.transform', tip(2, 1));
+    expect(h.plane.bHandles.j).toHaveProperty('attrs.tabindex', '0');
+  };
+  h.plane.render(IDENTITY);
+  checkTips();
+  const square = h.find('det-region').attrs.points;
+  h.plane.render(mul(b, a));
+  checkTips();
+  expect(h.find('det-region').attrs.points).not.toBe(square);
+  h.host.clientWidth = 900;
+  h.resize();
+  checkTips();
+  h.plane.setComposition();
+  h.plane.render(a);
+  expect(h.find('composition-b').style.display).toBe('none');
+  expect(h.plane.bHandles.i).toHaveProperty('attrs.tabindex', '-1');
 });

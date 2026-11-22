@@ -8,9 +8,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it.each(['explore', 'decompose'] as const)('round trips matrix entries and %s mode', (mode) => {
+it.each(['explore', 'decompose', 'compose'] as const)('round trips matrix entries and %s mode', (mode) => {
   const original = { matrix: { a: Math.PI, b: -1e-10, c: 1e21, d: 0 }, mode };
   expect(decodeState(encodeState(original))).toEqual(original);
+});
+
+it('round trips both composition factors while leaving older links unchanged', () => {
+  const original: UrlState = { ...state, mode: 'compose', b: { a: 2, b: 1e21, c: -0.5, d: 3 } };
+  expect(decodeState(encodeState(original))).toEqual(original);
+  expect(encodeState(state)).not.toContain('&b=');
+  expect(decodeState(encodeState(state))).not.toHaveProperty('b');
+});
+
+it.each(['', '1,2,3', '1,2,3,4,5', '1,,0,1', 'NaN,0,0,1', 'Infinity,0,0,1',
+  '1e309,0,0,1', '1x,0,0,1', '0x10,0,0,1', '%ZZ,0,0,1',
+  '1,0,0,1&b=2,0,0,2'])('rejects malformed composition factor %j', (b) => {
+  expect(decodeState(`#m=1,0,0,1&mode=compose&b=${b}`)).toBeNull();
 });
 
 it('reads row-major entries and defaults a matrix-only link to Explore', () => {

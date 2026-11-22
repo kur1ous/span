@@ -4,8 +4,9 @@ import { IDENTITY, diag, fromColumns, rotation, type Mat2 } from './math/mat2';
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
 import { createPlane } from './plane';
-import { createReadout } from './readout';
-import { bindModeTabs, modes, overlayLabels } from './modes';
+import { createReadout, renderComposition } from './readout';
+import { bindModeTabs, modes, overlayLabels, type ModeId } from './modes';
+import { bindComposition } from './composition';
 import { bindPlayback } from './playback';
 import { bindMatrixInputs } from './matrix-inputs';
 import { bindUrlState } from './url-state';
@@ -24,6 +25,9 @@ const readout = createReadout(
 let matrix: Mat2 = IDENTITY;
 let stop = () => {};
 let decomposing = false;
+let activeMode: ModeId = 'explore';
+const INITIAL_B: Mat2 = { a: 1, b: 0, c: 1, d: 1 };
+let matrixB = INITIAL_B;
 let syncUrl = () => {};
 const history = createMatrixHistory();
 const matrixInputs = bindMatrixInputs({
@@ -39,6 +43,17 @@ const playback = bindPlayback(
   (m, stage) => plane.render(m, stage),
 );
 const modeOverlays = modes.map((mode) => ({ ...mode.overlays }));
+const composition = bindComposition(
+  document.getElementById('composition-back') as HTMLButtonElement,
+  document.getElementById('composition-next') as HTMLButtonElement,
+  document.getElementById('composition-caption')!,
+  (m) => plane.render(m),
+);
+function resetComposition() {
+  plane.setComposition(matrix, matrixB);
+  renderComposition(document.getElementById('composition-readout')!, matrix, matrixB);
+  composition.reset(matrix, matrixB);
+}
 const selectMode = bindModeTabs(
   modes.map((mode) => document.getElementById(`mode-${mode.id}`) as HTMLButtonElement),
   document.getElementById('mode-panel')!,
@@ -46,6 +61,9 @@ const selectMode = bindModeTabs(
     if (decomposing && mode.id === 'decompose') return;
     stop();
     playback.pause();
+    composition.pause();
+    activeMode = mode.id;
+    plane.setComposition();
     decomposing = mode.id === 'decompose';
     document.getElementById('playback-cell')!.hidden = !decomposing;
     for (const which of ['i', 'j'] as const) {
@@ -53,8 +71,9 @@ const selectMode = bindModeTabs(
       plane.handles[which].setAttribute('tabindex', decomposing ? '-1' : '0');
     }
     if (decomposing) playback.reset(matrix);
+    else if (activeMode === 'compose') resetComposition();
     else plane.render(matrix);
-    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd']) {
+    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
@@ -81,6 +100,7 @@ const selectMode = bindModeTabs(
 function setMatrix(m: Mat2) {
   matrix = m;
   if (decomposing) playback.reset(m);
+  else if (activeMode === 'compose') resetComposition();
   else plane.render(m);
   readout.update(m);
   matrixInputs.update(m);
@@ -158,9 +178,19 @@ for (const [sliderId, outputId, toMatrix, format] of parametricPresets) {
   });
 }
 
-bindHandles(plane, () => matrix, editMatrix, () => stop());
+bindHandles(plane, () => matrix, editMatrix, () => { stop(); composition.pause(); });
+bindHandles({ ...plane, handles: { ...plane.handles, ...plane.bHandles } },
+  () => matrixB, (m) => {
+    matrixB = m;
+    resetComposition();
+    syncUrl();
+  }, () => { stop(); composition.pause(); }, ['i', 'j']);
 document.getElementById('reset')!.addEventListener('click', () => {
-  if (decomposing) editMatrix(IDENTITY);
+  if (activeMode === 'compose') {
+    stop();
+    matrixB = INITIAL_B;
+    editMatrix(IDENTITY);
+  } else if (decomposing) editMatrix(IDENTITY);
   else glideTo(IDENTITY);
 });
 
@@ -175,10 +205,12 @@ window.addEventListener('keydown', (event) => {
 });
 
 const urlState = bindUrlState(
-  () => ({ matrix, mode: decomposing ? 'decompose' : 'explore' }),
+  () => ({ matrix, mode: activeMode, ...(activeMode === 'compose' ? { b: matrixB } : {}) }),
   (state) => {
     stop();
     playback.pause();
+    composition.pause();
+    matrixB = state.b ?? INITIAL_B;
     history.clear();
     setMatrix(state.matrix);
     selectMode(state.mode);

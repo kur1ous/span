@@ -58,6 +58,8 @@ export interface Plane {
   readonly svg: SVGSVGElement;
   /** focusable grab rings on the basis images and probe vector */
   readonly handles: Readonly<Record<Which | 'v', SVGGElement>>;
+  readonly bHandles: Readonly<Record<Which, SVGGElement>>;
+  setComposition(a?: Mat2, b?: Mat2): void;
   probe(): Vec2;
   setProbe(v: Vec2): void;
   view(): View;
@@ -156,6 +158,17 @@ export function createPlane(host: HTMLElement): Plane {
   host.appendChild(probeNote);
 
   const handles = { i: makeHandle('i', svg), j: makeHandle('j', svg), v: makeHandle('v', svg) };
+  const bGroup = el('g', 'composition-b', svg);
+  const bVectors = (['i', 'j'] as const).map((which) => {
+    const group = el('g', `basis-b-${which}`, bGroup);
+    const shaft = el('line', 'shaft', group);
+    const head = el('polygon', undefined, group);
+    const label = el('text', 'vec-label', group);
+    label.textContent = `B${which === 'i' ? 'î' : 'ĵ'}`;
+    return { shaft, head, label, handle: makeHandle(which, group) };
+  });
+  const bHandles = { i: bVectors[0]!.handle, j: bVectors[1]!.handle };
+  let composition: { a: Mat2; b: Mat2 } | undefined;
 
   let view = makeView(host.clientWidth || 1, host.clientHeight || 1);
   let current: Mat2 = { a: 1, b: 0, c: 0, d: 1 };
@@ -241,7 +254,17 @@ export function createPlane(host: HTMLElement): Plane {
         `${i === 0 ? 'Major' : 'Minor'} semi-axis: singular value ${fmt(value)}`;
     });
 
-    const [ci, cj] = columns(m);
+    bGroup.style.display = composition ? '' : 'none';
+    bVectors.forEach(({ shaft, head, label, handle }, index) => {
+      handle.setAttribute('tabindex', composition ? '0' : '-1');
+      if (!composition) return;
+      const vector = columns(composition.b)[index]!;
+      const tip = toScreen(view, vector);
+      drawArrow(shaft, head, label, tip);
+      handle.setAttribute('transform', `translate(${f(tip[0])} ${f(tip[1])})`);
+      handle.setAttribute('aria-label', `Matrix B, ${handleLabel(index === 0 ? 'i' : 'j', vector)}`);
+    });
+    const [ci, cj] = columns(composition?.a ?? m);
     const ti = toScreen(view, ci);
     const tj = toScreen(view, cj);
     drawArrow(shaftI, headI, labelI, ti);
@@ -251,7 +274,8 @@ export function createPlane(host: HTMLElement): Plane {
     handles.i.setAttribute('aria-label', handleLabel('i', ci));
     handles.j.setAttribute('aria-label', handleLabel('j', cj));
 
-    drawDeterminant(m, ti, tj);
+    const [imageI, imageJ] = columns(m).map((v) => toScreen(view, v));
+    drawDeterminant(m, imageI!, imageJ!);
     drawEigenlines(m);
     drawProbe(m);
   }
@@ -355,6 +379,11 @@ export function createPlane(host: HTMLElement): Plane {
   return {
     svg,
     handles,
+    bHandles,
+    setComposition(a, b) {
+      composition = a && b ? { a, b } : undefined;
+      draw();
+    },
     probe: () => probe,
     setProbe(v) {
       probe = v;
