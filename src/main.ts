@@ -4,7 +4,7 @@ import { IDENTITY, commute, diag, fromColumns, rotation, type Mat2 } from './mat
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
 import { createPlane } from './plane';
-import { createReadout, renderComposition, renderSolve } from './readout';
+import { createReadout, renderBasis, renderComposition, renderSolve } from './readout';
 import { bindModeTabs, modes, overlayLabels, type ModeId } from './modes';
 import { bindComposition } from './composition';
 import { bindInverse } from './inverse';
@@ -64,8 +64,10 @@ function resetComposition() {
     : 'AB differs from BA: these matrices do not commute.';
   composition.reset(matrix, matrixB);
 }
-function updateSolve() {
+function updateProbeReadout() {
   if (activeMode === 'solve') renderSolve(document.getElementById('solve-readout')!, matrix, plane.probe());
+  if (activeMode === 'basis') renderBasis(document.getElementById('basis-readout')!,
+    document.getElementById('basis-caption')!, matrix, plane.probe());
 }
 const selectMode = bindModeTabs(
   modes.map((mode) => document.getElementById(`mode-${mode.id}`) as HTMLButtonElement),
@@ -78,7 +80,8 @@ const selectMode = bindModeTabs(
     inverseMode.pause();
     activeMode = mode.id;
     plane.setSolve(activeMode === 'solve');
-    updateSolve();
+    plane.setBasis(activeMode === 'basis');
+    updateProbeReadout();
     plane.setComposition();
     decomposing = mode.id === 'decompose';
     document.getElementById('playback-cell')!.hidden = !decomposing;
@@ -91,7 +94,7 @@ const selectMode = bindModeTabs(
     else if (activeMode === 'compose') resetComposition();
     else if (activeMode === 'inverse') inverseMode.reset(matrix);
     else plane.render(matrix);
-    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition', 'inverse', 'solve']) {
+    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition', 'inverse', 'solve', 'basis']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
@@ -122,7 +125,7 @@ function setMatrix(m: Mat2) {
   else if (activeMode === 'inverse') inverseMode.reset(m);
   else plane.render(m);
   readout.update(m);
-  updateSolve();
+  updateProbeReadout();
   matrixInputs.update(m);
   syncUrl();
 }
@@ -198,7 +201,7 @@ for (const [sliderId, outputId, toMatrix, format] of parametricPresets) {
   });
 }
 
-bindHandles({ ...plane, setProbe(v) { plane.setProbe(v); updateSolve(); } },
+bindHandles({ ...plane, setProbe(v) { plane.setProbe(v); updateProbeReadout(); } },
   () => matrix, editMatrix, () => { stop(); composition.pause(); });
 bindHandles({ ...plane, handles: { ...plane.handles, ...plane.bHandles } },
   () => matrixB, (m) => {

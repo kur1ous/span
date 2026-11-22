@@ -15,6 +15,27 @@ const OPTIONS: katex.KatexOptions = {
 
 const cell = (cls: string, n: number) => `\\htmlClass{${cls} num}{${fmt(n)}}`;
 
+export function basisReadout(p: Mat2, v: Vec2): { tex: string; note: string } {
+  const coordinates = solve(p, v);
+  const vector = (x: Vec2) => `\\begin{bmatrix}${fmt(x[0])}\\\\${fmt(x[1])}\\end{bmatrix}`;
+  const rows = [
+    `P=\\begin{bmatrix}${cell('col-i', p.a)} & ${cell('col-j', p.b)}\\\\${cell('col-i', p.c)} & ${cell('col-j', p.d)}\\end{bmatrix}`,
+    `[v]_{\\mathrm{standard}}=${vector(v)}`,
+    coordinates ? `[v]_P=P^{-1}v=${vector(coordinates)}` : '\\text{Coordinates unavailable}',
+  ];
+  return {
+    tex: `\\begin{array}{l}${rows.join('\\\\[4pt]')}\\end{array}`,
+    note: coordinates ? 'The coordinates are the weights of p₁ and p₂ that recover v. The vector stays fixed.'
+      : 'P is not a basis at working precision, or its coordinates exceed the finite numeric range. Move the columns apart.',
+  };
+}
+
+export function renderBasis(root: HTMLElement, caption: HTMLElement, p: Mat2, v: Vec2) {
+  const info = basisReadout(p, v);
+  katex.render(info.tex, root, OPTIONS);
+  caption.textContent = info.note;
+}
+
 export function renderSolve(root: HTMLElement, m: Mat2, b: Vec2) {
   const x = solve(m, b);
   const vector = (v: Vec2) => `\\begin{bmatrix}${fmt(v[0])}\\\\${fmt(v[1])}\\end{bmatrix}`;

@@ -30,6 +30,7 @@
           <button class="btn" id="mode-compose" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Compose</button>
           <button class="btn" id="mode-inverse" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Inverse</button>
           <button class="btn" id="mode-solve" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Solve</button>
+          <button class="btn" id="mode-basis" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Basis</button>
         </div>
 
         <div id="mode-panel" role="tabpanel" aria-labelledby="mode-explore">
@@ -74,6 +75,13 @@
             <h2 class="label" id="solve-label">Solve Ax = b</h2>
             <div class="readout tex-svd" id="solve-readout"></div>
             <p class="matrix-kind">Drag b or use its arrow keys; Shift takes larger steps. The dashed x and its dot mark the solution on the source grid. Singular matrices have no unique solution.</p>
+          </section>
+
+          <section class="cell" id="basis-cell" aria-labelledby="basis-label" hidden>
+            <h2 class="label" id="basis-label">Change of basis</h2>
+            <div class="readout tex-svd" id="basis-readout"></div>
+            <p class="matrix-kind">The current matrix supplies the columns of P. Drag p₁ and p₂ to choose a basis, or use arrow keys; Shift takes larger steps. The darker grid uses P; the paper grid is standard. Drag v to read the same vector in both bases.</p>
+            <p class="matrix-kind" id="basis-caption" role="status"></p>
           </section>
 
           <section class="cell" id="presets-cell" aria-labelledby="presets-label">

@@ -62,6 +62,7 @@ export interface Plane {
   readonly bHandles: Readonly<Record<Which, SVGGElement>>;
   setComposition(a?: Mat2, b?: Mat2): void;
   setSolve(enabled: boolean): void;
+  setBasis(enabled: boolean): void;
   probe(): Vec2;
   setProbe(v: Vec2): void;
   view(): View;
@@ -184,6 +185,7 @@ export function createPlane(host: HTMLElement): Plane {
   let probe: Vec2 = [2, 1.5];
   let target: Vec2 = [2, 1.5];
   let solving = false;
+  let changingBasis = false;
 
   /** Everything that depends only on the frame size: the static paper. */
   function drawPaper() {
@@ -287,8 +289,13 @@ export function createPlane(host: HTMLElement): Plane {
     drawArrow(shaftJ, headJ, labelJ, tj);
     handles.i.setAttribute('transform', `translate(${f(ti[0])} ${f(ti[1])})`);
     handles.j.setAttribute('transform', `translate(${f(tj[0])} ${f(tj[1])})`);
-    handles.i.setAttribute('aria-label', handleLabel('i', ci));
-    handles.j.setAttribute('aria-label', handleLabel('j', cj));
+    labelI.textContent = changingBasis ? 'p₁' : 'î';
+    labelJ.textContent = changingBasis ? 'p₂' : 'ĵ';
+    for (const [which, vector] of [['i', ci], ['j', cj]] as const) {
+      handles[which].setAttribute('aria-label', changingBasis
+        ? `Basis vector ${which === 'i' ? 'p1' : 'p2'}, at ${fmt(vector[0])}, ${fmt(vector[1])}. Arrow keys move it, shift for larger steps.`
+        : handleLabel(which, vector));
+    }
 
     const [imageI, imageJ] = columns(m).map((v) => toScreen(view, v));
     drawDeterminant(m, imageI!, imageJ!);
@@ -298,7 +305,7 @@ export function createPlane(host: HTMLElement): Plane {
 
   function drawProbe(m: Mat2) {
     orbitOverlay.replaceChildren();
-    const orbit = solving ? [] : complexOrbit(m, probe).map((point) => toScreen(view, point));
+    const orbit = solving || changingBasis ? [] : complexOrbit(m, probe).map((point) => toScreen(view, point));
     orbitOverlay.style.display = orbit.length ? '' : 'none';
     if (orbit.length) {
       el('polyline', 'orbit-line', orbitOverlay, { points: pts(orbit) });
@@ -314,6 +321,9 @@ export function createPlane(host: HTMLElement): Plane {
     labelAv.textContent = solving ? 'b' : 'Av';
     drawArrow(shaftV, headV, labelV, toScreen(view, source ?? [0, 0]));
     drawArrow(shaftAv, headAv, labelAv, toScreen(view, image));
+    if (changingBasis) {
+      for (const node of [shaftAv, headAv, labelAv]) node.style.display = 'none';
+    }
     solutionPoint.style.display = solving && source ? '' : 'none';
     if (solving && source) {
       const p = toScreen(view, source);
@@ -324,13 +334,13 @@ export function createPlane(host: HTMLElement): Plane {
     handles.v.setAttribute('transform', `translate(${f(tip[0])} ${f(tip[1])})`);
     handles.v.setAttribute('aria-label',
       solving ? `Target b, at ${fmt(target[0])}, ${fmt(target[1])}. Arrow keys move b, shift for larger steps.`
-        : `Probe v, at ${fmt(probe[0])}, ${fmt(probe[1])}. Image Av, at ${fmt(image[0])}, ${fmt(image[1])}. Arrow keys move v, shift for larger steps.`);
-    const aligned = !solving && nearEigendirection(m, probe);
+        : `Probe v, at ${fmt(probe[0])}, ${fmt(probe[1])}. ${changingBasis ? '' : `Image Av, at ${fmt(image[0])}, ${fmt(image[1])}. `}Arrow keys move v, shift for larger steps.`);
+    const aligned = !solving && !changingBasis && nearEigendirection(m, probe);
     probeOverlay.classList.toggle('is-aligned', aligned);
     handles.v.classList.toggle('is-aligned', aligned);
     const note = probe[0] === 0 && probe[1] === 0 ? 'v = 0 has no direction.'
       : aligned ? 'Near an eigendirection: stays on its line.' : 'Drag v to compare it with Av.';
-    const text = solving
+    const text = changingBasis ? 'Drag v to read its standard and P coordinates.' : solving
       ? source ? 'Drag b in the image plane; dashed x marks its source on the paper grid.'
         : 'No unique solution at working precision, or solution outside the finite numeric range.'
       : image[0] === 0 && image[1] === 0 ? `${note} Av = 0.` : note;
@@ -417,6 +427,10 @@ export function createPlane(host: HTMLElement): Plane {
     setSolve(enabled) {
       solving = enabled;
       drawProbe(current);
+    },
+    setBasis(enabled) {
+      changingBasis = enabled;
+      draw();
     },
     probe: () => solving ? target : probe,
     setProbe(v) {

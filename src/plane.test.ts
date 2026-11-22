@@ -176,3 +176,43 @@ it('keeps b fixed while x follows matrix edits, resize and singular recovery', (
   expect(point.style.display).toBe('none');
   expect(h.find('probe-label-source').textContent).toBe('v');
 });
+
+it('draws a basis grid while keeping v fixed through basis edits, resize and mode changes', () => {
+  const h = setup();
+  h.plane.setProbe([3, 2]);
+  h.plane.setBasis(true);
+  h.plane.setOverlays(modes.find((mode) => mode.id === 'basis')!.overlays);
+  const paper = h.find('paper-unit').attrs.d;
+  const checkProbe = () => {
+    const p = toScreen(h.plane.view(), [3, 2]);
+    expect(h.plane.handles.v).toHaveProperty('attrs.transform', `translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`);
+    expect(h.plane.handles.v).toHaveProperty('attrs.tabindex', '0');
+    expect(h.plane.handles.v).toHaveProperty('attrs.aria-label', expect.not.stringContaining('Av'));
+    expect(h.find('probe-image').style.display).toBe('none');
+    expect(h.find('orbit-overlay').style.display).toBe('none');
+  };
+  h.plane.render({ a: 0, b: -1, c: 1, d: 0 });
+  checkProbe();
+  expect(h.find('vec-label-i').textContent).toBe('p₁');
+  expect(h.plane.handles.i).toHaveProperty('attrs.aria-label', expect.stringContaining('Basis vector p1'));
+  const grid = h.find('warp').attrs.d;
+  h.plane.render({ a: 2, b: 1, c: 1, d: 1 });
+  expect(h.find('warp').attrs.d).not.toBe(grid);
+  expect(h.find('paper-unit').attrs.d).toBe(paper);
+  checkProbe();
+  h.plane.render(diag(1, 0));
+  checkProbe();
+  h.host.clientWidth = 900;
+  h.resize();
+  checkProbe();
+  h.plane.render(IDENTITY);
+  checkProbe();
+  h.plane.setBasis(false);
+  expect(h.find('probe-image').style.display).toBe('');
+  expect(h.find('vec-label-i').textContent).toBe('î');
+  h.plane.setSolve(true);
+  h.plane.setProbe([7, 1]);
+  h.plane.setSolve(false);
+  h.plane.setBasis(true);
+  checkProbe();
+});

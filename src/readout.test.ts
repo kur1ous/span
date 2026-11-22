@@ -1,7 +1,25 @@
 import katex from 'katex';
 import { describe, expect, it } from 'vitest';
 import { diag, type Mat2 } from './math/mat2';
-import { detNote, eigenReadout, svdReadout } from './readout';
+import { basisReadout, detNote, eigenReadout, svdReadout } from './readout';
+
+describe('basis readout', () => {
+  it('expresses the same vector in an oblique basis and the standard basis', () => {
+    const info = basisReadout({ a: 2, b: 1, c: 1, d: 1 }, [5, 3]);
+    expect(info.tex).toContain('[v]_{\\mathrm{standard}}=\\begin{bmatrix}5.00\\\\3.00\\end{bmatrix}');
+    expect(info.tex).toContain('[v]_P=P^{-1}v=\\begin{bmatrix}2.00\\\\1.00\\end{bmatrix}');
+    expect(katex.renderToString(info.tex, { throwOnError: true })).toContain('<math');
+    expect(info.note).toContain('vector stays fixed');
+  });
+
+  it.each([diag(0, 0), { a: 1, b: 2, c: 1, d: 2 }])('rejects dependent columns, including for the zero probe', (p) => {
+    const info = basisReadout(p, [0, 0]);
+    expect(info.tex).toContain('Coordinates unavailable');
+    expect(info.tex).not.toContain('P^{-1}');
+    expect(info.note).toContain('not a basis');
+    expect(katex.renderToString(info.tex, { throwOnError: true })).toContain('<math');
+  });
+});
 
 describe('determinant note', () => {
   it.each([0.0001, 0.0049])('preserves orientation for a small nonzero determinant %s', (area) => {
