@@ -391,6 +391,7 @@ body::before {
 .probe-source { stroke: currentColor; stroke-dasharray: var(--eigen-dash); }
 .probe-image { stroke: currentColor; stroke-width: var(--w-rule); }
 .probe-head, .probe-label { fill: currentColor; }
+.solution-point { r: var(--orbit-dot-radius); fill: var(--ink); }
 .probe-label-source { transform: translateY(calc(-1 * var(--s-5))); }
 .handle-v .ring { stroke: var(--ink); }
 .handle-v.is-aligned .ring { stroke: var(--eigen); }

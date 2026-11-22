@@ -29,6 +29,7 @@
           <button class="btn" id="mode-decompose" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Decompose</button>
           <button class="btn" id="mode-compose" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Compose</button>
           <button class="btn" id="mode-inverse" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Inverse</button>
+          <button class="btn" id="mode-solve" type="button" role="tab" aria-selected="false" aria-controls="mode-panel" tabindex="-1">Solve</button>
         </div>
 
         <div id="mode-panel" role="tabpanel" aria-labelledby="mode-explore">
@@ -67,6 +68,12 @@
             <div class="readout" id="inverse-readout"></div>
             <button class="btn" id="inverse-apply" type="button" aria-describedby="inverse-caption">Apply inverse to A</button>
             <p class="matrix-kind" id="inverse-caption" role="status"></p>
+          </section>
+
+          <section class="cell" id="solve-cell" aria-labelledby="solve-label" hidden>
+            <h2 class="label" id="solve-label">Solve Ax = b</h2>
+            <div class="readout tex-svd" id="solve-readout"></div>
+            <p class="matrix-kind">Drag b or use its arrow keys; Shift takes larger steps. The dashed x and its dot mark the solution on the source grid. Singular matrices have no unique solution.</p>
           </section>
 
           <section class="cell" id="presets-cell" aria-labelledby="presets-label">

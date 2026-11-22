@@ -11,6 +11,7 @@
 import { apply, columns, mul, type Mat2, type Svd, type Vec2 } from './math/mat2';
 import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
+import { solve } from './math/solve';
 import type { Which } from './edit';
 import { fmt } from './format';
 import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, singularAxes, transformedGrid, unitCircleImage } from './geometry';
@@ -60,6 +61,7 @@ export interface Plane {
   readonly handles: Readonly<Record<Which | 'v', SVGGElement>>;
   readonly bHandles: Readonly<Record<Which, SVGGElement>>;
   setComposition(a?: Mat2, b?: Mat2): void;
+  setSolve(enabled: boolean): void;
   probe(): Vec2;
   setProbe(v: Vec2): void;
   view(): View;
@@ -155,6 +157,7 @@ export function createPlane(host: HTMLElement): Plane {
   const headAv = el('polygon', 'probe-head', probeOverlay);
   const labelV = el('text', 'vec-label probe-label probe-label-source', probeOverlay);
   const labelAv = el('text', 'vec-label probe-label', probeOverlay);
+  const solutionPoint = el('circle', 'solution-point', probeOverlay);
   labelV.textContent = 'v';
   labelAv.textContent = 'Av';
   const probeNote = document.createElement('p');
@@ -179,6 +182,8 @@ export function createPlane(host: HTMLElement): Plane {
   let current: Mat2 = { a: 1, b: 0, c: 0, d: 1 };
   let decomposition: DecompositionStage | undefined;
   let probe: Vec2 = [2, 1.5];
+  let target: Vec2 = [2, 1.5];
+  let solving = false;
 
   /** Everything that depends only on the frame size: the static paper. */
   function drawPaper() {
@@ -293,7 +298,7 @@ export function createPlane(host: HTMLElement): Plane {
 
   function drawProbe(m: Mat2) {
     orbitOverlay.replaceChildren();
-    const orbit = complexOrbit(m, probe).map((point) => toScreen(view, point));
+    const orbit = solving ? [] : complexOrbit(m, probe).map((point) => toScreen(view, point));
     orbitOverlay.style.display = orbit.length ? '' : 'none';
     if (orbit.length) {
       el('polyline', 'orbit-line', orbitOverlay, { points: pts(orbit) });
@@ -302,19 +307,33 @@ export function createPlane(host: HTMLElement): Plane {
         el('title', undefined, dot).textContent = `A^${n} v`;
       });
     }
-    const image = apply(m, probe);
-    const tip = toScreen(view, probe);
-    drawArrow(shaftV, headV, labelV, tip);
+    const source = solving ? solve(m, target) : probe;
+    const image = solving ? target : apply(m, probe);
+    const tip = toScreen(view, solving ? target : probe);
+    labelV.textContent = solving ? 'x' : 'v';
+    labelAv.textContent = solving ? 'b' : 'Av';
+    drawArrow(shaftV, headV, labelV, toScreen(view, source ?? [0, 0]));
     drawArrow(shaftAv, headAv, labelAv, toScreen(view, image));
+    solutionPoint.style.display = solving && source ? '' : 'none';
+    if (solving && source) {
+      const p = toScreen(view, source);
+      solutionPoint.setAttribute('cx', f(p[0]));
+      solutionPoint.setAttribute('cy', f(p[1]));
+      solutionPoint.setAttribute('aria-label', `Solution x, at ${fmt(source[0])}, ${fmt(source[1])}`);
+    }
     handles.v.setAttribute('transform', `translate(${f(tip[0])} ${f(tip[1])})`);
     handles.v.setAttribute('aria-label',
-      `Probe v, at ${fmt(probe[0])}, ${fmt(probe[1])}. Image Av, at ${fmt(image[0])}, ${fmt(image[1])}. Arrow keys move v, shift for larger steps.`);
-    const aligned = nearEigendirection(m, probe);
+      solving ? `Target b, at ${fmt(target[0])}, ${fmt(target[1])}. Arrow keys move b, shift for larger steps.`
+        : `Probe v, at ${fmt(probe[0])}, ${fmt(probe[1])}. Image Av, at ${fmt(image[0])}, ${fmt(image[1])}. Arrow keys move v, shift for larger steps.`);
+    const aligned = !solving && nearEigendirection(m, probe);
     probeOverlay.classList.toggle('is-aligned', aligned);
     handles.v.classList.toggle('is-aligned', aligned);
     const note = probe[0] === 0 && probe[1] === 0 ? 'v = 0 has no direction.'
       : aligned ? 'Near an eigendirection: stays on its line.' : 'Drag v to compare it with Av.';
-    const text = image[0] === 0 && image[1] === 0 ? `${note} Av = 0.` : note;
+    const text = solving
+      ? source ? 'Drag b in the image plane; dashed x marks its source on the paper grid.'
+        : 'No unique solution at working precision, or solution outside the finite numeric range.'
+      : image[0] === 0 && image[1] === 0 ? `${note} Av = 0.` : note;
     if (probeNote.textContent !== text) probeNote.textContent = text;
   }
 
@@ -395,9 +414,14 @@ export function createPlane(host: HTMLElement): Plane {
       composition = a && b ? { a, b } : undefined;
       draw();
     },
-    probe: () => probe,
+    setSolve(enabled) {
+      solving = enabled;
+      drawProbe(current);
+    },
+    probe: () => solving ? target : probe,
     setProbe(v) {
-      probe = v;
+      if (solving) target = v;
+      else probe = v;
       drawProbe(current);
     },
     view: () => view,

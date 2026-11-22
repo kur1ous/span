@@ -25,7 +25,7 @@ export function decodeState(hash: string): UrlState | null {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   if (params.getAll('m').length !== 1 || params.getAll('mode').length > 1 || params.getAll('b').length > 1) return null;
   const mode = params.get('mode') ?? 'explore';
-  if (mode !== 'explore' && mode !== 'decompose' && mode !== 'compose' && mode !== 'inverse') return null;
+  if (mode !== 'explore' && mode !== 'decompose' && mode !== 'compose' && mode !== 'inverse' && mode !== 'solve') return null;
   const matrix = decodeMatrix(params.get('m')!);
   if (!matrix) return null;
   if (!params.has('b')) return { matrix, mode };

@@ -4,7 +4,7 @@ import { IDENTITY, commute, diag, fromColumns, rotation, type Mat2 } from './mat
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
 import { createPlane } from './plane';
-import { createReadout, renderComposition } from './readout';
+import { createReadout, renderComposition, renderSolve } from './readout';
 import { bindModeTabs, modes, overlayLabels, type ModeId } from './modes';
 import { bindComposition } from './composition';
 import { bindInverse } from './inverse';
@@ -64,6 +64,9 @@ function resetComposition() {
     : 'AB differs from BA: these matrices do not commute.';
   composition.reset(matrix, matrixB);
 }
+function updateSolve() {
+  if (activeMode === 'solve') renderSolve(document.getElementById('solve-readout')!, matrix, plane.probe());
+}
 const selectMode = bindModeTabs(
   modes.map((mode) => document.getElementById(`mode-${mode.id}`) as HTMLButtonElement),
   document.getElementById('mode-panel')!,
@@ -74,6 +77,8 @@ const selectMode = bindModeTabs(
     composition.pause();
     inverseMode.pause();
     activeMode = mode.id;
+    plane.setSolve(activeMode === 'solve');
+    updateSolve();
     plane.setComposition();
     decomposing = mode.id === 'decompose';
     document.getElementById('playback-cell')!.hidden = !decomposing;
@@ -86,7 +91,7 @@ const selectMode = bindModeTabs(
     else if (activeMode === 'compose') resetComposition();
     else if (activeMode === 'inverse') inverseMode.reset(matrix);
     else plane.render(matrix);
-    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition', 'inverse']) {
+    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition', 'inverse', 'solve']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
@@ -117,6 +122,7 @@ function setMatrix(m: Mat2) {
   else if (activeMode === 'inverse') inverseMode.reset(m);
   else plane.render(m);
   readout.update(m);
+  updateSolve();
   matrixInputs.update(m);
   syncUrl();
 }
@@ -192,7 +198,8 @@ for (const [sliderId, outputId, toMatrix, format] of parametricPresets) {
   });
 }
 
-bindHandles(plane, () => matrix, editMatrix, () => { stop(); composition.pause(); });
+bindHandles({ ...plane, setProbe(v) { plane.setProbe(v); updateSolve(); } },
+  () => matrix, editMatrix, () => { stop(); composition.pause(); });
 bindHandles({ ...plane, handles: { ...plane.handles, ...plane.bHandles } },
   () => matrixB, (m) => {
     matrixB = m;

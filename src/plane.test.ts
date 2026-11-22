@@ -139,3 +139,40 @@ it('compares both final square images throughout composition, edits and resize',
   h.plane.setComposition();
   expect(h.find('composition-order').style.display).toBe('none');
 });
+
+it('keeps b fixed while x follows matrix edits, resize and singular recovery', () => {
+  const h = setup();
+  h.plane.setProbe([1, 2]);
+  h.plane.setSolve(true);
+  h.plane.setOverlays(modes.find((mode) => mode.id === 'solve')!.overlays);
+  h.plane.setProbe([3, 2]);
+  const point = h.find('solution-point');
+  const check = (x: number, y: number) => {
+    const p = toScreen(h.plane.view(), [x, y]);
+    expect(point.style.display).toBe('');
+    expect([point.attrs.cx, point.attrs.cy]).toEqual(p.map((n) => n.toFixed(1)));
+    const b = toScreen(h.plane.view(), [3, 2]);
+    expect(h.plane.handles.v).toHaveProperty('attrs.transform',
+      `translate(${b[0].toFixed(1)} ${b[1].toFixed(1)})`);
+  };
+  h.plane.render({ a: 1, b: 1, c: 0, d: 1 });
+  check(1, 2);
+  h.plane.render(diag(3, 2));
+  check(1, 1);
+  h.host.clientWidth = 900;
+  h.resize();
+  check(1, 1);
+  h.plane.render(diag(1, 0));
+  expect(point.style.display).toBe('none');
+  expect(h.find('probe-source').style.display).toBe('none');
+  expect(h.host.children[1]!.textContent).toContain('No unique solution');
+  expect(h.plane.handles.v).toHaveProperty('attrs.tabindex', '0');
+  h.plane.render(IDENTITY);
+  check(3, 2);
+  h.plane.setProbe([0, 0]);
+  expect(point.style.display).toBe('');
+  h.plane.setSolve(false);
+  expect(h.plane.probe()).toEqual([1, 2]);
+  expect(point.style.display).toBe('none');
+  expect(h.find('probe-label-source').textContent).toBe('v');
+});

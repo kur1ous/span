@@ -32,6 +32,9 @@ describe('mode tabs', () => {
     h.activate('inverse');
     h.selected(3);
     expect(h.select.mock.lastCall![0].cells).toEqual(['matrix', 'det', 'inverse']);
+    h.activate('solve');
+    h.selected(4);
+    expect(h.select.mock.lastCall![0].cells).toContain('solve');
     h.activate('explore');
     h.selected(0);
     h.tabs.forEach((tab) => expect(tab.focus).not.toHaveBeenCalled());
@@ -55,11 +58,12 @@ describe('mode tabs', () => {
   });
 
   it.each([
-    [0, 'ArrowLeft', 3], [3, 'ArrowRight', 0],
+    [0, 'ArrowLeft', 4], [4, 'ArrowRight', 0],
     [0, 'ArrowRight', 1], [1, 'ArrowLeft', 0],
     [1, 'ArrowRight', 2], [2, 'ArrowLeft', 1],
     [2, 'ArrowRight', 3], [3, 'ArrowLeft', 2],
-    [0, 'End', 3], [3, 'Home', 0],
+    [3, 'ArrowRight', 4], [4, 'ArrowLeft', 3],
+    [0, 'End', 4], [4, 'Home', 0],
   ] as const)('moves from tab %i with %s to tab %i', (start, key, end) => {
     const h = setup();
     h.tabs[start]!.dispatchEvent(new Event('click'));

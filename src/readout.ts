@@ -3,6 +3,7 @@ import { fmt } from './format';
 import { det, diag, eigen, mul, svd, transpose, type Mat2, type Vec2 } from './math/mat2';
 import { complexPolar } from './math/orbit';
 import { classify } from './math/classify';
+import { solve } from './math/solve';
 
 // \htmlClass is the only extension we allow, so colours and the mono override
 // come from style.css instead of being baked into the TeX
@@ -13,6 +14,13 @@ const OPTIONS: katex.KatexOptions = {
 };
 
 const cell = (cls: string, n: number) => `\\htmlClass{${cls} num}{${fmt(n)}}`;
+
+export function renderSolve(root: HTMLElement, m: Mat2, b: Vec2) {
+  const x = solve(m, b);
+  const vector = (v: Vec2) => `\\begin{bmatrix}${fmt(v[0])}\\\\${fmt(v[1])}\\end{bmatrix}`;
+  katex.render(`\\begin{array}{l}b=${vector(b)}\\\\[4pt]` +
+    (x ? `x=A^{-1}b=${vector(x)}` : '\\text{No unique finite solution}') + '\\end{array}', root, OPTIONS);
+}
 
 export function renderComposition(root: HTMLElement, a: Mat2, b: Mat2) {
   const factor = (name: string, m: Mat2, left: string, right: string) =>
