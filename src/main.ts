@@ -95,6 +95,25 @@ for (const [label, target] of presets) {
   document.getElementById('preset-gallery')!.append(button);
 }
 
+const parametricPresets: readonly [string, string, (value: number) => Mat2, (value: number) => string][] = [
+  ['rotation-angle', 'rotation-value', (degrees) => rotation(degrees * Math.PI / 180), (degrees) => `${degrees}°`],
+  ['shear-factor', 'shear-value', (factor) => ({ a: 1, b: factor, c: 0, d: 1 }), (factor) => factor.toFixed(1)],
+];
+for (const [sliderId, outputId, toMatrix, format] of parametricPresets) {
+  const slider = document.getElementById(sliderId) as HTMLInputElement;
+  const output = document.getElementById(outputId) as HTMLOutputElement;
+  const updateValue = () => {
+    output.value = format(slider.valueAsNumber);
+    slider.setAttribute('aria-valuetext', output.value);
+  };
+  updateValue();
+  slider.addEventListener('input', () => {
+    stop();
+    updateValue();
+    setMatrix(toMatrix(slider.valueAsNumber));
+  });
+}
+
 bindHandles(plane, () => matrix, setMatrix, () => stop());
 document.getElementById('reset')!.addEventListener('click', () => {
   if (decomposing) setMatrix(IDENTITY);

@@ -41,6 +41,17 @@
           <section class="cell" id="presets-cell" aria-labelledby="presets-label">
             <h2 class="label" id="presets-label">Presets</h2>
             <div class="preset-gallery" id="preset-gallery"></div>
+            <p class="matrix-kind">Each slider applies its own preset.</p>
+            <div class="parametric-preset">
+              <label for="rotation-angle">Rotation angle</label>
+              <output id="rotation-value" for="rotation-angle">0°</output>
+              <input id="rotation-angle" type="range" min="-180" max="180" step="1" value="0" />
+            </div>
+            <div class="parametric-preset">
+              <label for="shear-factor">Shear x factor</label>
+              <output id="shear-value" for="shear-factor">0.0</output>
+              <input id="shear-factor" type="range" min="-3" max="3" step="0.1" value="0" />
+            </div>
           </section>
 
           <section class="cell" id="det-cell" aria-labelledby="det-label">

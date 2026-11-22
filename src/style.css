@@ -471,6 +471,31 @@ body::before {
   gap: var(--s-2);
 }
 
+.parametric-preset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-1) var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.parametric-preset output {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-num);
+}
+
+.parametric-preset input {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.parametric-preset input:focus-visible {
+  outline: var(--w-rule) solid var(--ink);
+  outline-offset: var(--s-1);
+}
+
 .mode-tabs [aria-selected='true'] {
   background: var(--ink);
   color: var(--paper);
