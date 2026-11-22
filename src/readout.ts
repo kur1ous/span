@@ -14,15 +14,6 @@ const OPTIONS: katex.KatexOptions = {
 
 const cell = (cls: string, n: number) => `\\htmlClass{${cls} num}{${fmt(n)}}`;
 
-function matrixTex(m: Mat2): string {
-  return (
-    'A=\\begin{bmatrix}' +
-    `${cell('col-i', m.a)} & ${cell('col-j', m.b)} \\\\ ` +
-    `${cell('col-i', m.c)} & ${cell('col-j', m.d)}` +
-    '\\end{bmatrix}'
-  );
-}
-
 function columnsTex(m: Mat2): string {
   return (
     '\\begin{array}{l}' +
@@ -123,11 +114,10 @@ function div(cls: string): HTMLDivElement {
 export function createReadout(
   matrixRoot: HTMLElement, detRoot: HTMLElement, eigenRoot: HTMLElement, svdRoot: HTMLElement,
 ): Readout {
-  const matrix = div('tex tex-matrix');
   const classification = document.createElement('p');
   classification.className = 'matrix-kind';
   const cols = div('tex tex-columns');
-  matrixRoot.replaceChildren(matrix, classification, cols);
+  matrixRoot.replaceChildren(classification, cols);
 
   const detBox = div('tex tex-det');
   const note = document.createElement('p');
@@ -148,7 +138,6 @@ export function createReadout(
 
   return {
     update(m) {
-      katex.render(matrixTex(m), matrix, OPTIONS);
       classification.textContent = classify(m).join(' · ') || 'general';
       katex.render(columnsTex(m), cols, OPTIONS);
       katex.render(detTex(m), detBox, OPTIONS);

@@ -35,6 +35,17 @@
               <h2 class="label" id="matrix-label">Transform</h2>
               <button class="btn" id="reset" type="button">Reset</button>
             </div>
+            <div class="matrix-editor" role="group" aria-label="Matrix A" aria-describedby="matrix-help">
+              <span aria-hidden="true">A =</span>
+              <div class="matrix-entries">
+                <input id="matrix-a" type="text" inputmode="decimal" aria-label="Row 1, column 1" aria-describedby="matrix-error" />
+                <input id="matrix-b" type="text" inputmode="decimal" aria-label="Row 1, column 2" aria-describedby="matrix-error" />
+                <input id="matrix-c" type="text" inputmode="decimal" aria-label="Row 2, column 1" aria-describedby="matrix-error" />
+                <input id="matrix-d" type="text" inputmode="decimal" aria-label="Row 2, column 2" aria-describedby="matrix-error" />
+              </div>
+            </div>
+            <p class="matrix-kind" id="matrix-help">Edit an entry, then press Enter or leave the field.</p>
+            <p class="matrix-kind" id="matrix-error" aria-live="polite"></p>
             <div class="readout" id="matrix-readout"></div>
           </section>
 

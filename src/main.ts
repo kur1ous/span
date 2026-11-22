@@ -7,6 +7,7 @@ import { createPlane } from './plane';
 import { createReadout } from './readout';
 import { bindModeTabs, modes, overlayLabels } from './modes';
 import { bindPlayback } from './playback';
+import { bindMatrixInputs } from './matrix-inputs';
 
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
@@ -21,6 +22,12 @@ const readout = createReadout(
 let matrix: Mat2 = IDENTITY;
 let stop = () => {};
 let decomposing = false;
+const matrixInputs = bindMatrixInputs({
+  a: document.getElementById('matrix-a') as HTMLInputElement,
+  b: document.getElementById('matrix-b') as HTMLInputElement,
+  c: document.getElementById('matrix-c') as HTMLInputElement,
+  d: document.getElementById('matrix-d') as HTMLInputElement,
+}, document.getElementById('matrix-error')!, () => matrix, setMatrix, () => stop());
 const playback = bindPlayback(
   document.getElementById('play-pause') as HTMLButtonElement,
   document.getElementById('stage-time') as HTMLInputElement,
@@ -71,6 +78,7 @@ function setMatrix(m: Mat2) {
   if (decomposing) playback.reset(m);
   else plane.render(m);
   readout.update(m);
+  matrixInputs.update(m);
 }
 
 function glideTo(target: Mat2) {

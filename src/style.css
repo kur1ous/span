@@ -585,9 +585,32 @@ body::before {
   text-align: left;
 }
 
-.tex-matrix .katex {
-  font-size: 1.7em;
+.matrix-editor { display: flex; align-items: center; gap: var(--s-2); }
+.matrix-entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-2);
+  border-inline: var(--w-rule) solid var(--ink);
 }
+.matrix-entries input {
+  width: 100%;
+  min-width: 0;
+  padding: var(--s-1);
+  border: var(--w-hair) solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--i-hat);
+  font: var(--t-num) var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.matrix-entries input:nth-child(even) { color: var(--j-hat); }
+.matrix-entries input:focus-visible {
+  outline: var(--w-rule) solid var(--ink);
+  outline-offset: var(--s-1);
+}
+.matrix-entries input[aria-invalid='true'] { border-color: var(--i-hat); border-style: dashed; }
+#matrix-error { color: var(--i-hat); }
 
 .tex-columns {
   margin-top: var(--s-3);
