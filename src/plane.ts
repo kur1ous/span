@@ -8,7 +8,7 @@
   gives focus, arrow-key handling and screen-reader labels for free.
 */
 
-import { apply, columns, type Mat2, type Svd, type Vec2 } from './math/mat2';
+import { apply, columns, mul, type Mat2, type Svd, type Vec2 } from './math/mat2';
 import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
 import type { Which } from './edit';
@@ -105,6 +105,11 @@ export function createPlane(host: HTMLElement): Plane {
   const detRegion = el('polygon', 'det-region', svg);
   const warp = el('path', 'warp', svg);
   const warpAxes = el('path', 'warp-axes', svg);
+  const orderOverlay = el('g', 'composition-order', svg, {
+    role: 'group', 'aria-label': 'Unit square images: long dashes AB, short dashes BA',
+  });
+  const squareAB = el('polygon', 'composition-square composition-ab', orderOverlay);
+  const squareBA = el('polygon', 'composition-square composition-ba', orderOverlay);
   const circleOverlay = el('g', 'circle-overlay', svg, {
     role: 'group', 'aria-label': 'Dashed unit circle, its solid image under A, and singular value semi-axes',
   });
@@ -255,6 +260,12 @@ export function createPlane(host: HTMLElement): Plane {
     });
 
     bGroup.style.display = composition ? '' : 'none';
+    orderOverlay.style.display = composition ? '' : 'none';
+    if (composition) {
+      const { a, b } = composition;
+      squareAB.setAttribute('points', pts(unitSquareImage(mul(a, b)).map((p) => toScreen(view, p))));
+      squareBA.setAttribute('points', pts(unitSquareImage(mul(b, a)).map((p) => toScreen(view, p))));
+    }
     bVectors.forEach(({ shaft, head, label, handle }, index) => {
       handle.setAttribute('tabindex', composition ? '0' : '-1');
       if (!composition) return;
@@ -397,7 +408,7 @@ export function createPlane(host: HTMLElement): Plane {
     },
     setOverlays(state) {
       // Visibility survives redraws that independently hide small area labels and arcs.
-      for (const node of [unitSquare, detRegion, arc, arcHead, detLabel]) {
+      for (const node of [unitSquare, detRegion, arc, arcHead, detLabel, orderOverlay]) {
         node.style.visibility = state.unitSquare ? '' : 'hidden';
       }
       paperFine.style.visibility = state.quarterRules ? '' : 'hidden';

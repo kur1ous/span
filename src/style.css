@@ -311,6 +311,16 @@ body::before {
   fill: url(#det-hatch);
 }
 
+.composition-square {
+  fill: none;
+  stroke-width: var(--w-rule);
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.composition-ab { stroke: var(--b-j); stroke-dasharray: var(--eigen-dash); }
+.composition-ba { stroke: var(--b-i); stroke-dasharray: var(--circle-dash); }
+
 .hatch-ground {
   fill: var(--det-wash);
 }

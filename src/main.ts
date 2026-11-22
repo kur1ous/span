@@ -1,6 +1,6 @@
 import 'katex/dist/katex.min.css';
 import './style.css';
-import { IDENTITY, diag, fromColumns, rotation, type Mat2 } from './math/mat2';
+import { IDENTITY, commute, diag, fromColumns, rotation, type Mat2 } from './math/mat2';
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
 import { createPlane } from './plane';
@@ -52,6 +52,9 @@ const composition = bindComposition(
 function resetComposition() {
   plane.setComposition(matrix, matrixB);
   renderComposition(document.getElementById('composition-readout')!, matrix, matrixB);
+  document.getElementById('composition-order')!.textContent = commute(matrix, matrixB)
+    ? 'AB = BA: these matrices commute (within numerical precision).'
+    : 'AB differs from BA: these matrices do not commute.';
   composition.reset(matrix, matrixB);
 }
 const selectMode = bindModeTabs(

@@ -3,6 +3,7 @@ import { createPlane } from './plane';
 import { IDENTITY, diag, mul, svd, type Svd } from './math/mat2';
 import { toScreen } from './view';
 import { stageMatrix } from './math/stages';
+import { modes } from './modes';
 
 class Node {
   attrs: Record<string, string> = {};
@@ -108,4 +109,33 @@ it('keeps editable A and B tips independent of the composition stage and resize'
   h.plane.render(a);
   expect(h.find('composition-b').style.display).toBe('none');
   expect(h.plane.bHandles.i).toHaveProperty('attrs.tabindex', '-1');
+});
+
+it('compares both final square images throughout composition, edits and resize', () => {
+  const h = setup();
+  const a = { a: 1, b: 1, c: 0, d: 1 };
+  const b = diag(2, 1);
+  expect(h.find('composition-order').style.display).toBe('none');
+  h.plane.setComposition(a, b);
+  const points = (corners: number[][]) => corners.map(([x, y]) =>
+    toScreen(h.plane.view(), [x!, y!]).map((v) => v.toFixed(1)).join(',')).join(' ');
+  const check = () => {
+    expect(h.find('composition-ab').attrs.points).toBe(points([[0, 0], [2, 0], [3, 1], [1, 1]]));
+    expect(h.find('composition-ba').attrs.points).toBe(points([[0, 0], [2, 0], [4, 1], [2, 1]]));
+  };
+  for (const stage of [IDENTITY, a, mul(b, a)]) {
+    h.plane.render(stage);
+    check();
+  }
+  h.host.clientWidth = 900;
+  h.resize();
+  check();
+  h.plane.setOverlays({ ...modes[2]!.overlays, unitSquare: false });
+  expect(h.find('composition-order').style.visibility).toBe('hidden');
+  h.plane.setOverlays(modes[2]!.overlays);
+  expect(h.find('composition-order').style.visibility).toBe('');
+  h.plane.setComposition(a, IDENTITY);
+  expect(h.find('composition-ab').attrs.points).toBe(h.find('composition-ba').attrs.points);
+  h.plane.setComposition();
+  expect(h.find('composition-order').style.display).toBe('none');
 });

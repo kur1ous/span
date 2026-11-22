@@ -61,6 +61,17 @@ export function transpose(m: Mat2): Mat2 {
   return { a: m.a, b: m.c, c: m.b, d: m.d };
 }
 
+export function commute(p: Mat2, q: Mat2): boolean {
+  const normalize = (m: Mat2): Mat2 => {
+    const scale = Math.max(Math.abs(m.a), Math.abs(m.b), Math.abs(m.c), Math.abs(m.d)) || 1;
+    return { a: m.a / scale, b: m.b / scale, c: m.c / scale, d: m.d / scale };
+  };
+  // Independent scaling preserves commutation and avoids overflowing products.
+  const a = normalize(p), b = normalize(q);
+  const ab = mul(a, b), ba = mul(b, a);
+  return (['a', 'b', 'c', 'd'] as const).every((key) => Math.abs(ab[key] - ba[key]) <= EPS);
+}
+
 export function det(m: Mat2): number {
   return m.a * m.d - m.b * m.c;
 }
