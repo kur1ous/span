@@ -17,7 +17,7 @@ export type ModeId = Mode['id'];
 
 export const modes: readonly Mode[] = [
   {
-    id: 'explore', cells: ['matrix', 'presets', 'det', 'eigen'],
+    id: 'explore', cells: ['matrix', 'presets', 'det', 'eigen', 'diagonalisation'],
     controls: ['unitSquare', 'unitCircle', 'quarterRules', 'tickLabels', 'eigenvectors', 'probe'],
     overlays: { unitSquare: true, unitCircle: false, quarterRules: true, tickLabels: true,
       eigenvectors: true, probe: true },

@@ -1,6 +1,7 @@
 import katex from 'katex';
 import { fmt } from './format';
-import { det, diag, eigen, mul, svd, transpose, type Mat2, type Vec2 } from './math/mat2';
+import { det, diag, eigen, inverse, mul, svd, transpose, type Mat2, type Vec2 } from './math/mat2';
+import { diagonalise } from './math/diagonalise';
 import { complexPolar } from './math/orbit';
 import { classify } from './math/classify';
 import { solve } from './math/solve';
@@ -105,6 +106,26 @@ export function eigenReadout(m: Mat2): { kind: string; tex: string; note: string
   };
 }
 
+export function diagonalisationReadout(m: Mat2): { tex: string; note: string } {
+  const factors = diagonalise(m);
+  if (!factors) {
+    return { tex: '', note: 'Not diagonalizable over the reals: no real eigenvector basis at working precision.' };
+  }
+  const { p, d } = factors;
+  if (![...Object.values(p), ...Object.values(d)].every(Number.isFinite) || !inverse(p)) {
+    return { tex: '', note: 'An eigenvector basis is unavailable at working precision.' };
+  }
+  const factor = (name: string, matrix: Mat2) =>
+    `${name}=\\begin{bmatrix}${fmt(matrix.a)} & ${fmt(matrix.b)}\\\\` +
+    `${fmt(matrix.c)} & ${fmt(matrix.d)}\\end{bmatrix}`;
+  return {
+    tex: `\\begin{array}{l}${factor('P', p)}\\\\[4pt]${factor('D', d)}\\\\[4pt]P^{-1}AP=D\\end{array}`,
+    note: m.b === 0 && m.c === 0 && m.a === m.d
+      ? 'Already diagonal: a scalar matrix admits any basis, so P = I.'
+      : 'The columns of P are unit eigenvectors in the same order as the eigenvalues in D.',
+  };
+}
+
 export function svdReadout(m: Mat2): { tex: string; note: string } {
   const { u, s, v } = svd(m);
   const factor = (name: string, matrix: Mat2) =>
@@ -150,6 +171,7 @@ function div(cls: string): HTMLDivElement {
 
 export function createReadout(
   matrixRoot: HTMLElement, detRoot: HTMLElement, eigenRoot: HTMLElement, svdRoot: HTMLElement,
+  diagonalisationRoot: HTMLElement,
 ): Readout {
   const classification = document.createElement('p');
   classification.className = 'matrix-kind';
@@ -173,6 +195,11 @@ export function createReadout(
   svdNote.className = 'svd-note';
   svdRoot.replaceChildren(svdBox, svdNote);
 
+  const diagonalisationBox = div('tex tex-diagonalisation');
+  const diagonalisationNote = document.createElement('p');
+  diagonalisationNote.className = 'diagonalisation-note';
+  diagonalisationRoot.replaceChildren(diagonalisationBox, diagonalisationNote);
+
   return {
     update(m) {
       classification.textContent = classify(m).join(' · ') || 'general';
@@ -188,6 +215,10 @@ export function createReadout(
       katex.render(decomposition.tex, svdBox, OPTIONS);
       svdNote.textContent = decomposition.note;
       svdNote.hidden = decomposition.note === '';
+      const diagonalisation = diagonalisationReadout(m);
+      katex.render(diagonalisation.tex, diagonalisationBox, OPTIONS);
+      diagonalisationBox.hidden = diagonalisation.tex === '';
+      diagonalisationNote.textContent = diagonalisation.note;
     },
   };
 }

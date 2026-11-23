@@ -1,7 +1,34 @@
 import katex from 'katex';
 import { describe, expect, it } from 'vitest';
 import { diag, type Mat2 } from './math/mat2';
-import { basisReadout, detNote, eigenReadout, svdReadout } from './readout';
+import { basisReadout, detNote, diagonalisationReadout, eigenReadout, svdReadout } from './readout';
+
+describe('diagonalisation readout', () => {
+  it('shows the eigenvector columns, diagonal eigenvalues and change of basis', () => {
+    const info = diagonalisationReadout({ a: 3, b: 1, c: 0, d: 2 });
+    expect(info.tex).toContain('P=\\begin{bmatrix}1.00 & 0.71\\\\0.00 & -0.71\\end{bmatrix}');
+    expect(info.tex).toContain('D=\\begin{bmatrix}3.00 & 0.00\\\\0.00 & 2.00\\end{bmatrix}');
+    expect(info.tex).toContain('P^{-1}AP=D');
+    expect(katex.renderToString(info.tex, { throwOnError: true })).toContain('<math');
+  });
+
+  it.each<Mat2>([
+    { a: 1, b: 1, c: 0, d: 1 },
+    { a: 0, b: -1, c: 1, d: 0 },
+  ])('explains why %o has no real diagonalisation', (m) => {
+    const info = diagonalisationReadout(m);
+    expect(info.tex).toBe('');
+    expect(info.note).toContain('Not diagonalizable over the reals');
+  });
+
+  it.each([0, 1, -2])('does not label the scalar matrix %s I as non-diagonalizable', (value) => {
+    const info = diagonalisationReadout(diag(value, value));
+    expect(info.note).toContain('Already diagonal');
+    expect(info.tex).toContain('P^{-1}AP=D');
+    expect(katex.renderToString(info.tex, { throwOnError: true })).toContain('<math');
+  });
+
+});
 
 describe('basis readout', () => {
   it('expresses the same vector in an oblique basis and the standard basis', () => {

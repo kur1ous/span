@@ -21,6 +21,7 @@ const readout = createReadout(
   document.getElementById('det-readout')!,
   document.getElementById('eigen-readout')!,
   document.getElementById('svd-readout')!,
+  document.getElementById('diagonalisation-readout')!,
 );
 
 let matrix: Mat2 = IDENTITY;
@@ -94,7 +95,7 @@ const selectMode = bindModeTabs(
     else if (activeMode === 'compose') resetComposition();
     else if (activeMode === 'inverse') inverseMode.reset(matrix);
     else plane.render(matrix);
-    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'svd', 'composition', 'inverse', 'solve', 'basis']) {
+    for (const cell of ['matrix', 'presets', 'det', 'eigen', 'diagonalisation', 'svd', 'composition', 'inverse', 'solve', 'basis']) {
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
