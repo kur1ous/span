@@ -66,6 +66,27 @@ describe('probe controls', () => {
 });
 
 describe('handle pointer ownership', () => {
+  it.each([
+    ['ArrowRight', 'a', 3.242, 4.142], ['ArrowLeft', 'a', 3.042, 2.142],
+    ['ArrowUp', 'c', 0.1, 1], ['ArrowDown', 'c', -0.1, -1],
+  ] as const)('preserves the other coordinate when pressing %s', (key, changed, fine, coarse) => {
+    for (const shiftKey of [false, true]) {
+      const h = setup();
+      const original = { a: Math.PI, b: -0.5, c: 0.000001, d: 1 };
+      h.set(original);
+      h.history.clear();
+      const event = Object.assign(new Event('keydown', { cancelable: true }), { key, shiftKey });
+
+      h.handle.dispatchEvent(event);
+
+      expect(h.matrix()).toEqual({
+        ...original, [changed]: shiftKey ? coarse : fine,
+      });
+      expect(event.defaultPrevented).toBe(true);
+      expect(h.history.undo(h.matrix())).toEqual(original);
+    }
+  });
+
   it('keeps a held arrow key in one undo entry across the initial repeat delay', () => {
     const h = setup();
     const now = vi.spyOn(performance, 'now');

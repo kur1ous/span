@@ -31,8 +31,8 @@ export function clampTo(v: Vec2, limit: Vec2): Vec2 {
   ];
 }
 
-/** Add a step and round away float dust so 0.1 + 0.2 shows as 0.3, not 0.30000000000000004. */
+/** Round float dust only on the moved axes, preserving precision on the others. */
 export function nudge(v: Vec2, dx: number, dy: number): Vec2 {
   const r = (n: number) => Math.round(n * 1000) / 1000;
-  return [r(v[0] + dx), r(v[1] + dy)];
+  return [dx === 0 ? v[0] : r(v[0] + dx), dy === 0 ? v[1] : r(v[1] + dy)];
 }
