@@ -82,12 +82,22 @@ export function trace(m: Mat2): number {
 
 /** Inverse, or null when the matrix is singular to working precision. */
 export function inverse(m: Mat2): Mat2 | null {
-  const dt = det(m);
-  // compare against the size of the entries so scaling a matrix does not
-  // change whether it counts as singular
-  const scale = Math.max(Math.abs(m.a * m.d), Math.abs(m.b * m.c));
+  let n = m;
+  let dt = det(m);
+  let row1 = 1, row2 = 1;
+  if (!Number.isFinite(dt) || dt === 0) {
+    row1 = Math.max(Math.abs(m.a), Math.abs(m.b));
+    row2 = Math.max(Math.abs(m.c), Math.abs(m.d));
+    if (row1 === 0 || row2 === 0) return null;
+    // Rescale only when needed: normalizing a usable determinant can lose
+    // tiny entries. M = diag(row1, row2) N, so M^-1 = N^-1 diag(1/row1, 1/row2).
+    n = { a: m.a / row1, b: m.b / row1, c: m.c / row2, d: m.d / row2 };
+    dt = det(n);
+  }
+  const scale = Math.max(Math.abs(n.a * n.d), Math.abs(n.b * n.c));
   if (Math.abs(dt) <= EPS * scale || dt === 0) return null;
-  return { a: m.d / dt, b: -m.b / dt, c: -m.c / dt, d: m.a / dt };
+  return { a: (n.d / dt) / row1, b: (-n.b / dt) / row2,
+    c: (-n.c / dt) / row1, d: (n.a / dt) / row2 };
 }
 
 export function norm(v: Vec2): number {

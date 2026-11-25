@@ -53,6 +53,14 @@ it.each([0, 1e-13])('disables the inverse for a singular or nearly singular matr
   expect(h.button.disabled).toBe(false);
 });
 
+it.each([1e-200, 1e200])('enables the inverse for a finite matrix at scale %s', (scale) => {
+  const h = setup({ a: scale, b: 0, c: 0, d: scale });
+  expect(h.button.disabled).toBe(false);
+  expect(katex.render).toHaveBeenCalledOnce();
+  h.click();
+  expect(tweenMatrix).toHaveBeenCalledOnce();
+});
+
 it('cancels on edits and mode exit, then resets the demonstration on return', () => {
   const h = setup();
   h.click();

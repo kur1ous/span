@@ -76,6 +76,31 @@ describe('basics', () => {
 });
 
 describe('inverse', () => {
+  it.each([1e-200, 1e200])('inverts finite matrices at scale %s', (scale) => {
+    for (const base of [m(2, 1, 1, 1), diag(1, -2), m(0, 1, 2, 0)]) {
+      const a = m(base.a * scale, base.b * scale, base.c * scale, base.d * scale);
+      const inv = inverse(a);
+      expect(inv).not.toBeNull();
+      expect(Object.values(inv!).every(Number.isFinite)).toBe(true);
+      expectMat(mul(a, inv!), IDENTITY);
+      expectMat(mul(inv!, a), IDENTITY);
+    }
+    expect(inverse(m(scale, scale, scale, scale))).toBeNull();
+    expect(inverse(m(scale, scale, scale, scale * (1 + 1e-14)))).toBeNull();
+  });
+
+  it('preserves invertibility when rows have very different scales', () => {
+    const a = diag(1e200, 1e-200);
+    expectMat(mul(a, inverse(a)!), IDENTITY);
+  });
+
+  it('preserves tiny entries when a mixed-scale determinant is already usable', () => {
+    const a = m(1e-200, 1e200, 1e-200, -1e200);
+    const inv = inverse(a)!;
+    expect(inv).toEqual(m(5e199, 5e199, 5e-201, -5e-201));
+    expectMat(mul(a, inv), IDENTITY);
+  });
+
   it('inverts [[2,1],[1,1]] to [[1,-1],[-1,2]]', () => {
     expectMat(inverse(m(2, 1, 1, 1))!, m(1, -1, -1, 2));
   });
