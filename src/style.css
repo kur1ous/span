@@ -182,6 +182,28 @@ body::before {
   pointer-events: none;
 }
 
+.subspace-overlay { pointer-events: none; }
+.column-space-line, .kernel-line {
+  stroke: var(--ink);
+  stroke-width: var(--w-vector);
+}
+.kernel-line { stroke: var(--j-hat); stroke-dasharray: var(--eigen-dash); }
+.kernel-image {
+  r: var(--s-2);
+  fill: var(--paper);
+  stroke: var(--j-hat);
+  stroke-width: var(--w-rule);
+}
+.subspace-label {
+  transform: translate(var(--s-3), var(--s-5));
+  fill: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--t-label);
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: var(--s-1);
+}
+
 .circle-overlay { pointer-events: none; }
 .unit-circle {
   fill: none;

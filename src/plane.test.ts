@@ -36,6 +36,35 @@ function setup() {
   return { host, plane, find, vectors, resize: () => resize() };
 }
 
+it('draws the image and kernel of a singular map and updates after resize and rank changes', () => {
+  const h = setup();
+  h.plane.render(diag(2, 0));
+  const check = () => {
+    const { width, height } = h.plane.view();
+    const o = toScreen(h.plane.view(), [0, 0]).map((n) => n.toFixed(1));
+    expect(h.find('column-space-line').attrs.d).toBe(`M0.0 ${o[1]}L${width.toFixed(1)} ${o[1]}`);
+    expect(h.find('kernel-line').attrs.d).toBe(`M${o[0]} ${height.toFixed(1)}L${o[0]} 0.0`);
+    expect([h.find('kernel-image').attrs.cx, h.find('kernel-image').attrs.cy]).toEqual(o);
+    expect(h.find('kernel-line').style.display).toBe('');
+  };
+  check();
+  h.host.clientWidth = 900;
+  h.resize();
+  check();
+  h.plane.render({ a: 0, b: 2, c: 0, d: 2 });
+  expect(h.find('column-space-line').attrs.d).toBe('M250.0 400.0L650.0 0.0');
+  expect(h.find('kernel-line').attrs.d).toBe('M0.0 200.0L900.0 200.0');
+  expect(h.find('subspace-label').textContent).toContain('Rank 1');
+  h.plane.render(diag(0, 0));
+  expect(h.find('column-space-line').style.display).toBe('none');
+  expect(h.find('kernel-line').style.display).toBe('none');
+  expect(h.find('kernel-image').style.display).toBe('');
+  expect(h.find('subspace-overlay').attrs['aria-label']).toContain('whole plane is the kernel');
+  h.plane.render(IDENTITY);
+  expect(h.find('kernel-image').style.display).toBe('none');
+  expect(h.find('subspace-label').textContent).toContain('Rank 2');
+});
+
 it('fades target unit directions above the morph and keeps labels distinct', () => {
   const h = setup();
   const factors: Svd = {

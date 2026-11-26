@@ -12,6 +12,8 @@ import { apply, columns, mul, type Mat2, type Svd, type Vec2 } from './math/mat2
 import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
 import { solve } from './math/solve';
+import { nullSpace, rank } from './math/subspaces';
+import { lineThroughOrigin } from './geometry';
 import type { Which } from './edit';
 import { fmt } from './format';
 import { arrowGeometry, eigenLines, eigenRing, orientationArc, paperGrid, singularAxes, transformedGrid, unitCircleImage } from './geometry';
@@ -139,6 +141,11 @@ export function createPlane(host: HTMLElement): Plane {
   const orbitOverlay = el('g', 'orbit-overlay', svg, {
     role: 'group', 'aria-label': 'Probe orbit: A to the power n times v, n from 0 to 12',
   });
+  const subspaceOverlay = el('g', 'subspace-overlay', svg, { role: 'group' });
+  const columnLine = el('path', 'column-space-line', subspaceOverlay);
+  const kernelLine = el('path', 'kernel-line', subspaceOverlay);
+  const kernelImage = el('circle', 'kernel-image', subspaceOverlay);
+  const subspaceLabel = el('text', 'subspace-label', subspaceOverlay);
 
   const vecs = el('g', 'vectors', svg);
   const shaftI = el('line', 'shaft shaft-i', vecs);
@@ -300,7 +307,29 @@ export function createPlane(host: HTMLElement): Plane {
     const [imageI, imageJ] = columns(m).map((v) => toScreen(view, v));
     drawDeterminant(m, imageI!, imageJ!);
     drawEigenlines(m);
+    drawSubspaces(m);
     drawProbe(m);
+  }
+
+  function drawSubspaces(m: Mat2) {
+    const r = rank(m);
+    const caption = r === 1
+      ? 'Rank 1: solid column space; dashed kernel maps to the origin.'
+      : r === 0 ? 'Rank 0: column space is the origin; the whole plane is the kernel.'
+        : 'Rank 2: column space is the whole plane; kernel is {0}.';
+    subspaceLabel.textContent = caption;
+    subspaceOverlay.setAttribute('aria-label', caption);
+    columnLine.style.display = kernelLine.style.display = r === 1 ? '' : 'none';
+    kernelImage.style.display = r < 2 ? '' : 'none';
+    const o = toScreen(view, [0, 0]);
+    kernelImage.setAttribute('cx', f(o[0]));
+    kernelImage.setAttribute('cy', f(o[1]));
+    if (r !== 1) return;
+    const scale = Math.max(Math.abs(m.a), Math.abs(m.b), Math.abs(m.c), Math.abs(m.d));
+    const cols = columns(m).map(([x, y]): Vec2 => [x / scale, y / scale]);
+    const column = Math.hypot(...cols[0]!) >= Math.hypot(...cols[1]!) ? cols[0]! : cols[1]!;
+    columnLine.setAttribute('d', segments([lineThroughOrigin(column, view)]));
+    kernelLine.setAttribute('d', segments([lineThroughOrigin(nullSpace(m)[0]!, view)]));
   }
 
   function drawProbe(m: Mat2) {

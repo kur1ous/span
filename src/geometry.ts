@@ -4,6 +4,13 @@ import { toScreen, worldBounds, type View } from './view';
 
 type Segment = readonly [Vec2, Vec2];
 
+export function lineThroughOrigin([x, y]: Vec2, view: View): Segment {
+  const o = toScreen(view, [0, 0]);
+  const reach = Math.min(view.width / (2 * Math.abs(x)), view.height / (2 * Math.abs(y)));
+  const dx = x * reach, dy = y * reach;
+  return [[o[0] - dx, o[1] + dy], [o[0] + dx, o[1] - dy]];
+}
+
 export function singularAxes(m: Mat2, view: View) {
   const { u, s } = svd(m);
   const origin = toScreen(view, [0, 0]);
