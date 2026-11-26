@@ -1,7 +1,7 @@
 import type { OverlayState } from './plane';
 
 export const overlayLabels = {
-  unitSquare: 'Unit square', unitCircle: 'Unit circle',
+  unitSquare: 'Shape', unitCircle: 'Unit circle',
   quarterRules: 'Quarter-unit rules', tickLabels: 'Tick labels',
   eigenvectors: 'Eigenlines', probe: 'Probe vector',
 } satisfies Record<keyof OverlayState, string>;

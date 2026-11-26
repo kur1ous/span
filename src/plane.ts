@@ -8,7 +8,7 @@
   gives focus, arrow-key handling and screen-reader labels for free.
 */
 
-import { apply, columns, mul, type Mat2, type Svd, type Vec2 } from './math/mat2';
+import { IDENTITY, apply, columns, mul, type Mat2, type Svd, type Vec2 } from './math/mat2';
 import { nearEigendirection } from './math/probe';
 import { complexOrbit } from './math/orbit';
 import { solve } from './math/solve';
@@ -35,7 +35,17 @@ function el<K extends keyof SVGElementTagNameMap>(
   return node;
 }
 
-const SQUARE: readonly Vec2[] = [[0, 0], [1, 0], [1, 1], [0, 1]];
+export type Shape = 'square' | 'f' | 'circle' | 'house';
+
+const OUTLINES: Record<Exclude<Shape, 'circle'>, readonly Vec2[]> = {
+  square: [[0, 0], [1, 0], [1, 1], [0, 1]],
+  f: [[0, 0], [0.35, 0], [0.35, 0.8], [0.9, 0.8], [0.9, 1.1],
+    [0.35, 1.1], [0.35, 1.65], [1, 1.65], [1, 2], [0, 2]],
+  house: [[0, 0], [1, 0], [1, 1], [0.5, 1.5], [0, 1]],
+};
+const SHAPE_LABELS: Record<Shape, string> = {
+  square: 'Unit square', f: 'Letter F', circle: 'Circle', house: 'House outline',
+};
 
 const f = (n: number) => n.toFixed(1);
 
@@ -65,6 +75,7 @@ export interface Plane {
   setComposition(a?: Mat2, b?: Mat2): void;
   setSolve(enabled: boolean): void;
   setBasis(enabled: boolean): void;
+  setShape(shape: Shape): void;
   probe(): Vec2;
   setProbe(v: Vec2): void;
   view(): View;
@@ -193,6 +204,7 @@ export function createPlane(host: HTMLElement): Plane {
   let target: Vec2 = [2, 1.5];
   let solving = false;
   let changingBasis = false;
+  let shape: Shape = 'square';
 
   /** Everything that depends only on the frame size: the static paper. */
   function drawPaper() {
@@ -406,11 +418,12 @@ export function createPlane(host: HTMLElement): Plane {
   function drawDeterminant(m: Mat2, ti: Vec2, tj: Vec2) {
     const corners = unitSquareImage(m);
     const area = polygonArea(corners);
-    const screen = corners.map((p) => toScreen(view, p));
-
-    // the plain unit square stays behind as the thing being compared against
-    unitSquare.setAttribute('points', pts(SQUARE.map((p) => toScreen(view, p))));
-    detRegion.setAttribute('points', pts(screen));
+    const outline = (matrix: Mat2) => shape === 'circle' ? unitCircleImage(matrix, view)
+      : OUTLINES[shape].map((p) => toScreen(view, apply(matrix, p)));
+    unitSquare.setAttribute('points', pts(outline(IDENTITY)));
+    detRegion.setAttribute('points', pts(outline(m)));
+    unitSquare.setAttribute('aria-label', `Source: ${SHAPE_LABELS[shape]}`);
+    detRegion.setAttribute('aria-label', `Transformed: ${SHAPE_LABELS[shape]}`);
     detRegion.classList.toggle('is-negative', area < 0);
 
     const orientation = orientationArc(view, ti, tj, area);
@@ -423,7 +436,8 @@ export function createPlane(host: HTMLElement): Plane {
 
     // the label only appears when the region is big enough to hold it
     const c = toScreen(view, centroid(corners));
-    const roomy = Math.abs(area) * view.scale * view.scale > 1600;
+    // Only the unit square's image has signed area equal to the determinant.
+    const roomy = shape === 'square' && Math.abs(area) * view.scale * view.scale > 1600;
     detLabel.style.display = roomy ? '' : 'none';
     if (roomy) {
       detLabel.textContent = fmt(area);
@@ -459,6 +473,10 @@ export function createPlane(host: HTMLElement): Plane {
     },
     setBasis(enabled) {
       changingBasis = enabled;
+      draw();
+    },
+    setShape(next) {
+      shape = next;
       draw();
     },
     probe: () => solving ? target : probe,

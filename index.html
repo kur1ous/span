@@ -136,6 +136,16 @@
               <legend class="label">Overlays</legend>
               <div class="overlay-strip" id="overlay-strip"></div>
             </fieldset>
+            <div id="shape-control">
+              <label for="shape-picker">Shape to transform</label>
+              <select id="shape-picker" aria-describedby="shape-help">
+                <option value="square">Unit square</option>
+                <option value="f">Letter F</option>
+                <option value="circle">Circle</option>
+                <option value="house">House outline</option>
+              </select>
+              <p class="matrix-kind" id="shape-help">Dashed source, solid image. The F makes orientation flips visible.</p>
+            </div>
           </div>
         </div>
 

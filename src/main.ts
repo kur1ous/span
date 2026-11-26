@@ -3,7 +3,7 @@ import './style.css';
 import { IDENTITY, commute, diag, fromColumns, rotation, type Mat2 } from './math/mat2';
 import { tweenMatrix } from './anim';
 import { bindHandles } from './interact';
-import { createPlane } from './plane';
+import { createPlane, type Shape } from './plane';
 import { createReadout, renderBasis, renderComposition, renderSolve } from './readout';
 import { bindModeTabs, modes, overlayLabels, type ModeId } from './modes';
 import { bindComposition } from './composition';
@@ -16,6 +16,8 @@ import { createKeyBurst, createMatrixHistory } from './history';
 const START = fromColumns([1.5, 0.5], [-0.5, 1]);
 
 const plane = createPlane(document.getElementById('plane-frame')!);
+const shapePicker = document.getElementById('shape-picker') as HTMLSelectElement;
+shapePicker.addEventListener('change', () => plane.setShape(shapePicker.value as Shape));
 const readout = createReadout(
   document.getElementById('matrix-readout')!,
   document.getElementById('det-readout')!,
@@ -99,6 +101,7 @@ const selectMode = bindModeTabs(
       document.getElementById(`${cell}-cell`)!.hidden = !mode.cells.includes(cell);
     }
     const overlays = modeOverlays[modes.indexOf(mode)]!;
+    document.getElementById('shape-control')!.hidden = !mode.controls.includes('unitSquare');
     const strip = document.getElementById('overlay-strip')!;
     strip.replaceChildren();
     for (const key of mode.controls) {

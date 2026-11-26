@@ -36,6 +36,55 @@ function setup() {
   return { host, plane, find, vectors, resize: () => resize() };
 }
 
+it('reflects the F and retains its source, visibility and selection through resize', () => {
+  const h = setup();
+  h.plane.render(diag(-2, 3));
+  h.plane.setShape('f');
+  const points = (values: number[][]) => values.map(([x, y]) =>
+    toScreen(h.plane.view(), [x!, y!]).map((v) => v.toFixed(1)).join(',')).join(' ');
+  const check = () => {
+    expect(h.find('det-region').attrs.points).toBe(points([
+      [0, 0], [-0.7, 0], [-0.7, 2.4], [-1.8, 2.4], [-1.8, 3.3],
+      [-0.7, 3.3], [-0.7, 4.95], [-2, 4.95], [-2, 6], [0, 6],
+    ]));
+    expect(h.find('unit-square').attrs.points!.split(' ').at(-1)).toBe(points([[0, 2]]));
+    expect(h.find('det-region').attrs['aria-label']).toBe('Transformed: Letter F');
+    expect(h.find('det-region').classList.toggle).toHaveBeenLastCalledWith('is-negative', true);
+    expect(h.find('det-label').style.display).toBe('none');
+  };
+  check();
+  h.plane.setOverlays({ ...modes[0]!.overlays, unitSquare: false });
+  h.host.clientWidth = 900;
+  h.resize();
+  check();
+  expect(h.find('det-region').style.visibility).toBe('hidden');
+  h.plane.setOverlays(modes[0]!.overlays);
+  expect(h.find('det-region').style.visibility).toBe('');
+  h.plane.setShape('square');
+  expect(h.find('det-label').style.display).toBe('');
+  expect(h.find('det-label').textContent).toBe('-6.00');
+});
+
+it('switches to the house and circle while preserving separate circle and composition overlays', () => {
+  const h = setup();
+  h.plane.setComposition(IDENTITY, diag(2, 1));
+  const ghost = h.find('composition-ba').attrs.points;
+  h.plane.setShape('house');
+  const roof = toScreen(h.plane.view(), [0.5, 1.5]).map((v) => v.toFixed(1)).join(',');
+  expect(h.find('det-region').attrs.points!.split(' ')).toHaveLength(5);
+  expect(h.find('det-region').attrs.points!.split(' ')[3]).toBe(roof);
+  h.plane.setShape('circle');
+  expect(h.find('det-region').attrs.points).toBe(h.find('circle-image').attrs.points);
+  expect(h.find('composition-ba').attrs.points).toBe(ghost);
+  h.plane.render(diag(2, 0));
+  expect(h.find('det-region').attrs.points).toBe(h.find('circle-image').attrs.points);
+  const originY = toScreen(h.plane.view(), [0, 0])[1].toFixed(1);
+  expect(h.find('det-region').attrs.points!.split(' ').every((p) => p.split(',')[1] === originY)).toBe(true);
+  h.plane.render(IDENTITY);
+  expect(h.find('det-region').attrs.points).toBe(h.find('unit-square').attrs.points);
+  expect(h.find('det-label').style.display).toBe('none');
+});
+
 it('draws the image and kernel of a singular map and updates after resize and rank changes', () => {
   const h = setup();
   h.plane.render(diag(2, 0));
