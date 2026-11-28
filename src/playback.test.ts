@@ -5,6 +5,8 @@ import { IDENTITY, diag, rotation, svd } from './math/mat2';
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 function setup(target = diag(3, 2)) {
+  const motion = { matches: false };
+  vi.stubGlobal('window', { matchMedia: vi.fn(() => motion) });
   let now = 0;
   let id = 0;
   const frames = new Map<number, FrameRequestCallback>();
@@ -21,7 +23,7 @@ function setup(target = diag(3, 2)) {
     slider as unknown as HTMLInputElement, captions as unknown as HTMLElement[], render);
   playback.reset(target);
   return {
-    button, slider, captions, render, playback, frames,
+    button, slider, captions, render, playback, frames, motion,
     click: () => button.dispatchEvent(new Event('click')),
     scrub(value: number) { slider.value = String(value); slider.dispatchEvent(new Event('input')); },
     tick(ms: number) {
@@ -115,4 +117,29 @@ it('announces progress within each stage while scrubbing in either direction', (
     expect(h.slider.setAttribute).toHaveBeenLastCalledWith('aria-valuetext',
       `${h.captions[stage]!.textContent}, stage ${stage + 1} of 3, ${percent}% through stage`);
   }
+});
+
+it('completes playback without animation when reduced motion is preferred', () => {
+  const h = setup();
+  h.motion.matches = true;
+  for (const start of [0, 1.5, 3]) {
+    h.scrub(start);
+    h.render.mockClear();
+    h.click();
+    expect(h.frames.size).toBe(0);
+    expect(h.button.textContent).toBe('Play');
+    expect(h.slider.value).toBe('3');
+    expect(h.render).toHaveBeenCalledExactlyOnceWith(diag(3, 2),
+      { factors: svd(diag(3, 2)), time: 3 });
+    expect(h.slider.setAttribute).toHaveBeenLastCalledWith('aria-valuetext',
+      `${h.captions[2]!.textContent}, stage 3 of 3, 100% through stage`);
+  }
+  h.scrub(1.25);
+  expect(h.render).toHaveBeenLastCalledWith(diag(1.125, 1.0625), expect.any(Object));
+  expect(h.frames.size).toBe(0);
+
+  h.motion.matches = false;
+  h.click(); h.tick(600);
+  expect(h.slider.value).toBe('1.75');
+  expect(h.button.textContent).toBe('Pause');
 });

@@ -32,6 +32,11 @@ export function bindPlayback(
 
   button.addEventListener('click', () => {
     if (playing) { pause(); return; }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      seek(3);
+      pause();
+      return;
+    }
     if (time === 3) seek(0);
     playing = true;
     button.textContent = 'Pause';
